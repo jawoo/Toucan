@@ -48,8 +48,8 @@ public class App
     static boolean step1 = true;   // preparation
     static boolean step2 = true;   // testingMultiplePlantingDates
     static boolean step3 = true;   // retrievingDaysToFlowering
-    static boolean step4 = false;   // seasonalRuns
-    static boolean step5 = false;   // wrappingUp
+    static boolean step4 = true;   // seasonalRuns
+    static boolean step5 = true;   // wrappingUp
 
     /*
     0: Water Management
@@ -175,6 +175,7 @@ public class App
                 FileUtils.cleanDirectory(new File(directoryMultiplePlatingDates));
                 FileUtils.cleanDirectory(new File(directoryFloweringDates));
                 FileUtils.cleanDirectory(new File(directoryInputPlatingDates));
+                FileUtils.cleanDirectory(new File(directoryFinal));
             }
 
         } //if (step1)
@@ -199,7 +200,7 @@ public class App
             System.out.println("> Number of units to run: "+numberOfUnits);
 
             // Get weather information
-            String[] weatherInfo = getFileNames(directoryWeather, "WTH", 5);
+            String[] weatherInfo = getFileNames(directoryWeather, "WTH", 0);
 
             // Reduce the number of threads to match with number of units
             //if (numberOfThreads>numberOfUnits) numberOfThreads = numberOfUnits;
@@ -222,76 +223,8 @@ public class App
             /*
             4. SEASONAL RUNS
             */
-            if (step4)
-            {
-                System.out.println("> Running seasonal simulations...");
-
-                // Multithreading
-                ThreadFactoryBuilder threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat("%d");
-                ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads, threadFactoryBuilder.build());
-                List<Future<Integer>> list = new ArrayList<>();
-
-                // Looping through units
-                for (int i = 0; i < numberOfUnits; i = i + 1)
-                {
-
-                    // Status
-                    String progress = climateOption + ", R" + (i+1) + "/" + numberOfUnits;
-
-                    // Subset
-                    if (numberOfUnits>0)
-                    {
-                        try
-                        {
-                            if (i < numberOfUnits)
-                            {
-
-                                //Unit Information
-                                Object[] ou = (Object[]) unitInfo[i];
-                                String season = (String) ou[12];
-
-                                // Construct the cultivar option
-                                String cropCode = (String)ou[6];
-                                String cultivarCode = (String)ou[7];
-                                String cultivarName = (String)ou[8];
-                                int[] cultivarInfo = (int[])ou[9];
-                                Object[] cultivarOption = new Object[]{ countryCode, cropCode, cultivarCode, cultivarName, cultivarInfo[0], cultivarInfo[1], cultivarInfo[2] };
-                                String cropCultivarCode = cultivarOption[1] + (String)cultivarOption[2];
-                                int daysToFlowering = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[0];
-                                int daysToHarvest = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[1];
-
-                                // Multiple weather files for this unit
-                                for (String weatherFileName: weatherInfo)
-                                {
-                                    String weatherKey = weatherFileName.split("\\.")[0] + "_" + season + "_" + cropCode;
-                                    int p = (int)plantingDatesToSimulate.get(weatherKey);
-                                    Object[] weatherAndPlantingDate = { weatherFileName, p };
-
-                                    // Multiple threads
-                                    Future<Integer> future = executor.submit(new ThreadSeasonalRuns(ou, weatherAndPlantingDate, cultivarOption, daysToFlowering, daysToHarvest, climateOption, progress, firstPlantingYear, co2History));
-                                    list.add(future);
-                                }
-
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            ex.printStackTrace();
-                        }
-
-                    }
-
-                } // Looping through units
-
-                // Retrieve
-                for (Future<Integer> future : list)
-                {
-                    future.get();
-                }
-                executor.shutdown();
-
-            } //if (step4)
-
+            System.out.println("> Running seasonal simulations...");
+            runSeasonalSimulations(unitInfo, weatherInfo, plantingDatesToSimulate, climateOption, daysToFloweringByCultivar, firstPlantingYear, co2History);
 
 
             /*
@@ -300,7 +233,7 @@ public class App
             if (step5)
             {
                 boolean firstFile = true;
-                String[] outputFileNames = getFileNames(directoryOutput, climateOption);
+                String[] outputFileNames = getFileNames(directoryOutput, "_"+climateOption);
 
                 // Write
                 try
@@ -391,14 +324,12 @@ public class App
                 }
 
                 // Retrieve
-                for (int i = 0, listSize = list.size(); i < listSize; i++)
+                for (Future<Object[]> future: list)
                 {
-                    Future<Object[]> future = list.get(i);
                     Object[] r = future.get();
                     String weatherKey = (String) r[0];
                     int plantingDate = (Integer) r[1];
                     //int plantingDate = 135;  // <-- Per Tim Thomas' specification
-
                     plantingDatesToSimulate.put(weatherKey, plantingDate);
                 }
                 executor.shutdown();
@@ -446,8 +377,24 @@ public class App
                     int[] cultivarInfo = (int[])o[9];
                     Object[] cultivarOption = new Object[]{ countryCode, cropCode, cultivarCode, cultivarName, cultivarInfo[0], cultivarInfo[1], cultivarInfo[2] };
 
+                    // Select a subset of weatherInfo
+                    String[] weatherInfoSubset;
+                    if (weatherInfo.length>10)
+                    {
+                        weatherInfoSubset = new String[10];
+                        int min = 0;
+                        int max = weatherInfo.length-1;
+                        for (int i=0; i<10; i++)
+                        {
+                            int randomIndex = ThreadLocalRandom.current().nextInt(min, max);
+                            weatherInfoSubset[i] = weatherInfo[randomIndex];
+                        }
+                    }
+                    else
+                        weatherInfoSubset = weatherInfo;
+
                     // Weather name
-                    for (String weatherFileName: weatherInfo)
+                    for (String weatherFileName: weatherInfoSubset)
                     {
                         String weatherKey = weatherFileName.split("\\.")[0] + "_" + season + "_" + cropCode;
 
@@ -476,7 +423,7 @@ public class App
 
             }
 
-            // Retrieve
+            // Execute and retrieve the exit code
             for (Future<Integer> future: list)
             {
                 int exitCode = future.get();
@@ -576,6 +523,82 @@ public class App
 
 
 
+    // Run seasonal simulations
+    public static void runSeasonalSimulations(Object[] unitInfo, String[] weatherInfo,
+                                              TreeMap<Object, Object> plantingDatesToSimulate, String climateOption,
+                                              TreeMap<Object, Object> daysToFloweringByCultivar,
+                                              int firstPlantingYear, TreeMap<Integer, Integer> co2History)
+            throws ExecutionException, InterruptedException
+    {
+        int numberOfUnits = unitInfo.length;
+
+        // Multithreading
+        ThreadFactoryBuilder threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat("%d");
+        ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads, threadFactoryBuilder.build());
+        List<Future<Integer>> list = new ArrayList<>();
+
+        // Looping through units
+        for (int i = 0; i < numberOfUnits; i = i + 1)
+        {
+
+            // Status
+            String progress = climateOption + ", R" + (i+1) + "/" + numberOfUnits;
+
+            // Subset
+            if (step4 && numberOfUnits>0)
+            {
+                try
+                {
+                    if (i < numberOfUnits)
+                    {
+
+                        //Unit Information
+                        Object[] ou = (Object[]) unitInfo[i];
+                        String season = (String) ou[12];
+
+                        // Construct the cultivar option
+                        String cropCode = (String)ou[6];
+                        String cultivarCode = (String)ou[7];
+                        String cultivarName = (String)ou[8];
+                        int[] cultivarInfo = (int[])ou[9];
+                        Object[] cultivarOption = new Object[]{ countryCode, cropCode, cultivarCode, cultivarName, cultivarInfo[0], cultivarInfo[1], cultivarInfo[2] };
+                        String cropCultivarCode = cultivarOption[1] + (String)cultivarOption[2];
+                        int daysToFlowering = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[0];
+                        int daysToHarvest = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[1];
+
+                        // Multiple weather files for this unit
+                        for (String weatherFileName: weatherInfo)
+                        {
+                            String weatherKey = weatherFileName.split("\\.")[0] + "_" + season + "_" + cropCode;
+                            int p = (int)plantingDatesToSimulate.get(weatherKey);
+                            Object[] weatherAndPlantingDate = { weatherFileName, p };
+
+                            // Multiple threads
+                            Future<Integer> future = executor.submit(new ThreadSeasonalRuns(ou, weatherAndPlantingDate, cultivarOption, daysToFlowering, daysToHarvest, climateOption, progress, firstPlantingYear, co2History));
+                            list.add(future);
+                        }
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ex.printStackTrace();
+                }
+
+            }
+
+        } // Looping through units
+
+        // Retrieve
+        for (Future<Integer> future: list)
+        {
+            future.get();
+        }
+        executor.shutdown();
+    }
+
+
+
     // List of Unit IDs
     public static Object[] getUnitInfo(String tableName)
     {
@@ -645,8 +668,7 @@ public class App
             }
         }
         catch (Exception e) { e.printStackTrace(); }
-        Object[] list = unitInfo.toArray(Object[]::new);
-        return list;
+        return unitInfo.toArray(Object[]::new);
     }
 
 
@@ -677,15 +699,18 @@ public class App
     {
         File dir = new File(filePath);
         FilenameFilter filter = (directory, name) -> (name.toUpperCase().contains(filteringText.toUpperCase()));
-        String[] list = dir.list(filter);
-        return list;
+        return dir.list(filter);
     }
     static String[] getFileNames(String filePath, String filteringText, int limitForDebugging)
     {
         File dir = new File(filePath);
         FilenameFilter filter = (directory, name) -> (name.toUpperCase().contains(filteringText.toUpperCase()));
-        String[] list = Arrays.stream(dir.list(filter)).limit(limitForDebugging).toArray(String[]::new);
-        return list;
+        String[] out;
+        if (limitForDebugging>0)
+            out = Arrays.stream(dir.list(filter)).limit(limitForDebugging).toArray(String[]::new);
+        else
+            out = Arrays.stream(dir.list(filter)).toArray(String[]::new);
+        return out;
     }
     static String[] getFileNames(String filePath)
     {
