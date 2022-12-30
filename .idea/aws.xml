@@ -6,6 +6,8 @@
     <option name="recentlyUsedProfiles">
       <list>
         <option value="profile:default" />
+        <option value="profile:Administrator" />
+        <option value="profile:foresight" />
       </list>
     </option>
     <option name="recentlyUsedRegions">
@@ -13,5 +15,8 @@
         <option value="us-east-1" />
       </list>
     </option>
+  </component>
+  <component name="connectionManager">
+    <option name="activeConnectionId" value="AwsConnectionManagerConnection" />
   </component>
 </project>

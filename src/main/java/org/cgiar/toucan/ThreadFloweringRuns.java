@@ -1,11 +1,33 @@
 package org.cgiar.toucan;
 
 import java.io.*;
+import java.util.concurrent.Callable;
 
-public class ThreadFloweringRuns
+public class ThreadFloweringRuns implements Callable<Integer>
 {
+    int exitCode = 0;
+    Object[] o;
+    int threadID;
+    String weatherFileName;
+    int pd;
+    Object[] cultivarOption;
+    String pdateOption;
+    int co2;
+    int firstPlantingYear;
 
-    public static Integer find(Object[] o, int threadID, String weatherFileName, int pd, Object[] cultivarOption, String pdateOption, int co2, int firstPlantingYear)
+    ThreadFloweringRuns(Object[] o, int threadID, String weatherFileName, int pd, Object[] cultivarOption, String pdateOption, int co2, int firstPlantingYear)
+    {
+        this.o = o;
+        this.threadID = threadID;
+        this.weatherFileName = weatherFileName;
+        this.pd = pd;
+        this.cultivarOption = cultivarOption;
+        this.pdateOption = pdateOption;
+        this.co2 = co2;
+        this.firstPlantingYear = firstPlantingYear;
+    }
+
+    public Integer call()
     {
 
         // To return
@@ -64,7 +86,7 @@ public class ThreadFloweringRuns
             // Write SNX file
             try
             {
-                SnxWriterFloweringRuns.runningTreatmentPackages(0, o, pd, cultivarOption, co2, firstPlantingYear);
+                SnxWriterFloweringRuns.runningTreatmentPackages(threadID, o, pd, cultivarOption, co2, firstPlantingYear);
             }
             catch (Exception ex)
             {
@@ -72,7 +94,7 @@ public class ThreadFloweringRuns
             }
 
             // Run it
-            exitCode = ExeRunner.dscsm048(0, "N");
+            exitCode = ExeRunner.dscsm048(threadID, "N");
 
             // Copy output file
             try

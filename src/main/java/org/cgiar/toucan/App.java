@@ -21,8 +21,6 @@ public class App
     // Some initialization and settings
     static long timeInitial = System.currentTimeMillis();
     static String tableNameUnitInformation = "unit_information";
-    static String tableNameBenchmark = "unit_information_benchmark";
-    static String tableNameWeather = "weather_information";
     static String OS = System.getProperty("os.name").toLowerCase();
     static String d;
     static String filePlantingDate = "pdates";
@@ -39,8 +37,7 @@ public class App
     static String directorySource;
     static String dataPlantingDates;
     static String dataDaysToFlowering;
-
-    static int numberOfThreads = 1;    // per box
+    static int numberOfThreads = 4;    // per box
     static String countryCode = "ETH";
     static int limitForDebugging = 1;
     static boolean useAvgPlantingDensity = true;
@@ -48,12 +45,11 @@ public class App
     static boolean cleanUpFirst = true;
     static int numberOfCultivars = 0;
     static boolean printDaysToFlowering = true;
-
     static boolean step1 = true;   // preparation
     static boolean step2 = true;   // testingMultiplePlantingDates
     static boolean step3 = true;   // retrievingDaysToFlowering
-    static boolean step4 = true;   // seasonalRuns
-    static boolean step5 = true;   // wrappingUp
+    static boolean step4 = false;   // seasonalRuns
+    static boolean step5 = false;   // wrappingUp
 
     /*
     0: Water Management
@@ -157,7 +153,7 @@ public class App
                         Files.setPosixFilePermissions(Paths.get(dT), perms);
 
                         // Apply to all files
-                        String[] workingFileNames = getTxFileNames(dT);
+                        String[] workingFileNames = getFileNames(dT);
                         for (String workingFileName : workingFileNames)
                             Files.setPosixFilePermissions(Paths.get(dT + d + workingFileName), perms);
 
@@ -191,248 +187,36 @@ public class App
         climateOptions.add(new Object[]{ 2011, "2011" });
 
         // Looping through climates
-        for (Object[] climate : climateOptions)
+        for (Object[] climate: climateOptions)
         {
             int firstPlantingYear = (int)climate[0];
             String climateOption = (String)climate[1];
+            int co2 = co2History.get(firstPlantingYear);
 
             // Get unit information
-            List unitInfo = getUnitInfo(tableNameUnitInformation);
-            int numberOfUnits = unitInfo.size();
+            Object[] unitInfo = getUnitInfo(tableNameUnitInformation);
+            int numberOfUnits = unitInfo.length;
             System.out.println("> Number of units to run: "+numberOfUnits);
 
             // Get weather information
-            List weatherInfo = getWeatherFileNames();
+            String[] weatherInfo = getFileNames(directoryWeather, "WTH", 5);
 
             // Reduce the number of threads to match with number of units
-            if (numberOfThreads>numberOfUnits) numberOfThreads = numberOfUnits;
-
+            //if (numberOfThreads>numberOfUnits) numberOfThreads = numberOfUnits;
 
 
             /*
             2. FINDING PROMISING PLANTING DATES
             */
             System.out.println("> Climate scenario: "+climateOption);
-            TreeMap<Object, Object> plantingDatesToSimulate = new TreeMap<>();
-
-            if (step2)
-            {
-                System.out.println("> Scanning planting dates...");
-
-                // Subset
-                if (!unitInfo.isEmpty())
-                {
-                    try
-                    {
-                        ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
-                        List<Future<Object[]>> list = new ArrayList<>();
-
-                        // Execute
-                        for (int i=0; i<unitInfo.size(); i++)
-                        {
-                            Object[] oi = (Object[]) unitInfo.get(i);
-                            int cell5m = (Integer) oi[1];
-                            int medianPlantingDate = (Integer) oi[5];
-                            String cropCode = (String) oi[6];
-                            String season = (String) oi[12];
-                            System.out.println("> Planting Date "+(i+1)+"/"+numberOfUnits+", CELL5M: "+cell5m+" for "+cropCode+", "+season+" season");
-
-                            // Multiple weather files for this unit
-                            for (Object o : weatherInfo)
-                            {
-                                Object[] ow = (Object[]) o;
-                                String weatherFileName = (String) ow[0];
-                                Future<Object[]> future = executor.submit(new ScanningPlantingDates(medianPlantingDate, weatherFileName, season, cropCode));
-                                list.add(future);
-                            }
-
-                        }
-
-                        // Retrieve
-                        for (Future<Object[]> future : list)
-                        {
-                            Object[] r = future.get();
-                            String weatherKey = (String)r[0];
-                            int plantingDate = (Integer)r[1];
-                            //int plantingDate = 135;  // <-- Per Tim Thomas' specification
-
-                            plantingDatesToSimulate.put(weatherKey, plantingDate);
-                        }
-                        executor.shutdown();
-
-                    }
-                    catch (Exception ex)
-                    {
-                        ex.printStackTrace();
-                    }
-                }
-                System.out.println("> Runs for scanning planting dates done.");
-
-            } //if (step2)
-
+            TreeMap<Object, Object> plantingDatesToSimulate = getPlantingDates(unitInfo, weatherInfo);
 
 
             /*
             3. ADDITIONAL RUNS FOR RETRIEVING DAYS-TO-FLOWER FOR EACH VARIETY
             */
-            TreeMap<Object, Object> daysToFloweringByCultivar = new TreeMap<>();
-            if (step3)
-            {
-
-                // Use the best planting dates
-                String plantingDateOptionLabel = "PB";
-                System.out.println("> Retrieving days to flowering...");
-
-                // Get Unit Information
-                List unitInfoBenchmark = getUnitInfo(tableNameBenchmark);
-
-                // CO2 (baseline)
-                int co2 = co2History.get(2011);
-
-                // Distribute weather files over threads
-                if (!unitInfoBenchmark.isEmpty())
-                {
-                    int u = 0;
-                    while(u<unitInfoBenchmark.size())
-                    {
-
-                        try
-                        {
-                            Object[] o = (Object[])unitInfoBenchmark.get(u);
-                            int pdMean = (int)o[5];
-                            String season = (String) o[12];
-
-                            // Construct the cultivar option
-                            String cropCode = (String)o[6];
-                            String cultivarCode = (String)o[7];
-                            String cultivarName = (String)o[8];
-                            int[] cultivarInfo = (int[])o[9];
-                            Object[] cultivarOption = new Object[]{ countryCode, cropCode, cultivarCode, cultivarName, cultivarInfo[0], cultivarInfo[1], cultivarInfo[2] };
-
-                            // Weather name
-                            for (Object wi : weatherInfo)
-                            {
-                                Object[] ow = (Object[]) wi;
-                                String weatherFileName = (String) ow[0];
-                                String weatherKey = weatherFileName.split("\\.")[0] + "_" + season + "_" + cropCode;
-
-                                // To use below
-                                daysToFloweringByCultivar.put(cropCode + cultivarCode, new int[]{0, 0});
-
-                                // Planting dates to use
-                                if (plantingDatesToSimulate.containsKey(weatherKey)) {
-                                    int exitCode;
-                                    int pd = (Integer) plantingDatesToSimulate.get(weatherKey);
-                                    if (pd > 0)
-                                        exitCode = ThreadFloweringRuns.find(o, 0, weatherFileName, pd, cultivarOption, plantingDateOptionLabel, co2, firstPlantingYear);
-                                    else
-                                        exitCode = ThreadFloweringRuns.find(o, 0, weatherFileName, pdMean, cultivarOption, plantingDateOptionLabel, co2, firstPlantingYear);
-                                    if (exitCode > 0)
-                                        System.out.println("> Finding flowering date failed for " + cropCode);
-                                }
-
-                            }
-
-                        }
-                        catch (Exception ex)
-                        {
-                            ex.printStackTrace();
-                        }
-                        u++;
-
-                    }
-
-                }
-
-                // Collet output files
-                String[] csvFileNames = getCSVFileNames(directoryFloweringDates);
-
-                // For each CSV file
-                for (String csvFileName: csvFileNames)
-                {
-
-                    // Status
-                    System.out.println("> Analyzing "+csvFileName+"...");
-
-                    // Reading in
-                    Reader in = new FileReader(directoryFloweringDates+csvFileName);
-                    Iterable<CSVRecord> records = CSVFormat.RFC4180.withFirstRecordAsHeader().parse(in);
-                    for (CSVRecord record: records)
-                    {
-
-                        // Parse the cultivar code from TNAM
-                        String cropCultivarCode = record.get("CR") + record.get("TNAM").substring(0,6);
-
-                        // Parse PDAT and ADAT for computing the "days to flowering"
-                        int dtf, dth, pDDD = 0, aDDD = 0, hDDD = 0;
-                        if (record.get("PDAT").length()>4)
-                            pDDD = Integer.parseInt(record.get("PDAT").substring(4));
-                        if (record.get("ADAT").length()>4)
-                            aDDD = Integer.parseInt(record.get("ADAT").substring(4));
-                        if (record.get("HDAT").length()>4)
-                            aDDD = Integer.parseInt(record.get("HDAT").substring(4));
-                        if (aDDD>0)
-                        {
-
-                            // Flowering date
-                            if (aDDD > pDDD)
-                                dtf = aDDD - pDDD + 1;
-                            else
-                                dtf = aDDD + (365 - pDDD) + 1;
-
-                            // Harvest date
-                            if (hDDD > pDDD)
-                                dth = hDDD - pDDD + 1;
-                            else
-                                dth = hDDD + (365 - pDDD) + 1;
-
-                            // Storing
-                            try
-                            {
-                                int dtfPrevious = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[0];
-                                int dtfNew = (dtf + dtfPrevious) / 2;
-
-                                int dthPrevious = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[1];
-                                int dthNew = (dth + dthPrevious) / 2;
-
-                                daysToFloweringByCultivar.put(cropCultivarCode, new int[]{ dtfNew, dthNew });
-                            }
-                            catch(Exception ex)
-                            {
-                                ex.printStackTrace();
-                            }
-                        }
-
-                    } // For each row in the CSV file
-
-                } // For each CSV file
-
-                // Writing a CSV output file
-                if (printDaysToFlowering)
-                {
-                    dataDaysToFlowering = directoryFloweringDates + fileDaysToFlowering + "_" + climateOption +".csv";
-                    System.out.println("> Writing "+dataDaysToFlowering+"...");
-                    try( FileWriter writer = new FileWriter(dataDaysToFlowering);
-                         CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT
-                                 .withHeader("CultivarCode","AvgDaysToFlowering","AvgDaysToHarvest")))
-                    {
-                        for(Map.Entry<Object, Object> entry : daysToFloweringByCultivar.entrySet())
-                        {
-                            String key = (String)entry.getKey();
-                            int[] value = (int[])entry.getValue();
-                            csvPrinter.printRecord(key, value[0], value[1]);
-                        }
-                        csvPrinter.flush();
-                    }
-                    catch (Exception ex)
-                    {
-                        ex.printStackTrace();
-                    }
-                }
-                System.out.println("> Days to flowering defined.");
-
-            } //if (step3)
-
+            System.out.println("> Retrieving days to flowering...");
+            TreeMap<Object, Object> daysToFloweringByCultivar = getFloweringDates(unitInfo, weatherInfo, plantingDatesToSimulate, climateOption, firstPlantingYear, co2);
 
 
             /*
@@ -455,15 +239,15 @@ public class App
                     String progress = climateOption + ", R" + (i+1) + "/" + numberOfUnits;
 
                     // Subset
-                    if (!unitInfo.isEmpty())
+                    if (numberOfUnits>0)
                     {
                         try
                         {
-                            if (i < unitInfo.size())
+                            if (i < numberOfUnits)
                             {
 
                                 //Unit Information
-                                Object[] ou = (Object[]) unitInfo.get(i);
+                                Object[] ou = (Object[]) unitInfo[i];
                                 String season = (String) ou[12];
 
                                 // Construct the cultivar option
@@ -477,10 +261,8 @@ public class App
                                 int daysToHarvest = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[1];
 
                                 // Multiple weather files for this unit
-                                for (Object wi : weatherInfo)
+                                for (String weatherFileName: weatherInfo)
                                 {
-                                    Object[] ow = (Object[]) wi;
-                                    String weatherFileName = (String) ow[0];
                                     String weatherKey = weatherFileName.split("\\.")[0] + "_" + season + "_" + cropCode;
                                     int p = (int)plantingDatesToSimulate.get(weatherKey);
                                     Object[] weatherAndPlantingDate = { weatherFileName, p };
@@ -518,7 +300,7 @@ public class App
             if (step5)
             {
                 boolean firstFile = true;
-                String[] outputFileNames = getCSVFileNames(directoryOutput, climateOption);
+                String[] outputFileNames = getFileNames(directoryOutput, climateOption);
 
                 // Write
                 try
@@ -575,28 +357,227 @@ public class App
 
 
 
-    // List of weather file names
-    public static List getWeatherFileNames()
+    // Find promising planting dates
+    public static TreeMap<Object, Object> getPlantingDates(Object[] unitInfo, String[] weatherInfo)
     {
-        List weatherInfo = Lists.newArrayList();
-        try
+        TreeMap<Object, Object> plantingDatesToSimulate = new TreeMap<>();
+        int numberOfUnits = unitInfo.length;
+
+        // If step2 is false, an empty treemap will be returned.
+        if (step2 && numberOfUnits>0)
         {
-            Reader in = new FileReader(directoryInput + tableNameWeather + ".csv");
-            Iterable<CSVRecord> records = CSVFormat.RFC4180.withFirstRecordAsHeader().parse(in);
-            for (CSVRecord record : records)
+            try
             {
-                Object[] o = new Object[1];
-                o[0] = record.get(0);
-                weatherInfo.add(o);
+                ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
+                List<Future<Object[]>> list = new ArrayList<>();
+
+                // Execute
+                for (int i=0; i<numberOfUnits; i++)
+                {
+                    Object[] oi = (Object[])unitInfo[i];
+                    int cell5m = (Integer) oi[1];
+                    int medianPlantingDate = (Integer) oi[5];
+                    String cropCode = (String) oi[6];
+                    String season = (String) oi[12];
+                    System.out.println("> Planting date "+(i+1)+"/"+numberOfUnits+", CELL5M: "+cell5m+" for "+cropCode+", "+season+" season");
+
+                    // Multiple weather files for this unit
+                    for (String weatherFileName: weatherInfo)
+                    {
+                        Future<Object[]> future = executor.submit(new ScanningPlantingDates(medianPlantingDate, weatherFileName, season, cropCode));
+                        list.add(future);
+                    }
+
+                }
+
+                // Retrieve
+                for (int i = 0, listSize = list.size(); i < listSize; i++)
+                {
+                    Future<Object[]> future = list.get(i);
+                    Object[] r = future.get();
+                    String weatherKey = (String) r[0];
+                    int plantingDate = (Integer) r[1];
+                    //int plantingDate = 135;  // <-- Per Tim Thomas' specification
+
+                    plantingDatesToSimulate.put(weatherKey, plantingDate);
+                }
+                executor.shutdown();
+
             }
-        } catch (Exception ex) { ex.printStackTrace(); }
-        return weatherInfo;
+            catch (Exception ex)
+            {
+                ex.printStackTrace();
+            }
+        }
+        System.out.println("> Runs for scanning planting dates done.");
+        return plantingDatesToSimulate;
+    }
+
+
+
+    // Find average flowering dates
+    public static TreeMap<Object, Object> getFloweringDates(Object[] unitInfo, String[] weatherInfo,
+                                                            TreeMap<Object, Object> plantingDatesToSimulate,
+                                                            String climateOption,
+                                                            int firstPlantingYear, int co2) throws IOException, ExecutionException, InterruptedException {
+        TreeMap<Object, Object> daysToFloweringByCultivar = new TreeMap<>();
+        String plantingDateOptionLabel = "PB";
+        int numberOfUnits = unitInfo.length;
+
+        // Distribute weather files over threads
+        if (step3 && numberOfUnits>0)
+        {
+            int u = 0;
+            int threadID = 0;
+            ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
+            List<Future<Integer>> list = new ArrayList<>();
+            while(u < numberOfUnits)
+            {
+                try
+                {
+                    Object[] o = (Object[])unitInfo[u];
+                    int pdMean = (int)o[5];
+                    String season = (String) o[12];
+
+                    // Construct the cultivar option
+                    String cropCode = (String)o[6];
+                    String cultivarCode = (String)o[7];
+                    String cultivarName = (String)o[8];
+                    int[] cultivarInfo = (int[])o[9];
+                    Object[] cultivarOption = new Object[]{ countryCode, cropCode, cultivarCode, cultivarName, cultivarInfo[0], cultivarInfo[1], cultivarInfo[2] };
+
+                    // Weather name
+                    for (String weatherFileName: weatherInfo)
+                    {
+                        String weatherKey = weatherFileName.split("\\.")[0] + "_" + season + "_" + cropCode;
+
+                        // To use below
+                        daysToFloweringByCultivar.put(cropCode + cultivarCode, new int[]{0, 0});
+
+                        // Planting dates to use
+                        if (plantingDatesToSimulate.containsKey(weatherKey))
+                        {
+                            int pd = (Integer) plantingDatesToSimulate.get(weatherKey);
+                            if (pd <= 0) pd = pdMean;
+                            Future<Integer> future = executor.submit(new ThreadFloweringRuns(o, threadID, weatherFileName, pd, cultivarOption, plantingDateOptionLabel, co2, firstPlantingYear));
+                            list.add(future);
+                            threadID++;
+                            if (threadID==numberOfThreads) threadID = 0;
+                        }
+
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    ex.printStackTrace();
+                }
+                u++;
+
+            }
+
+            // Retrieve
+            for (Future<Integer> future: list)
+            {
+                int exitCode = future.get();
+                if (exitCode>0) System.out.println("> Failed to find good flowering dates...");
+            }
+            executor.shutdown();
+
+            // Collect output files
+            String[] csvFileNames = getFileNames(directoryFloweringDates, "CSV");
+
+            // For each CSV file
+            for (String csvFileName: csvFileNames)
+            {
+
+                // Status
+                System.out.println("> Analyzing "+csvFileName+"...");
+
+                // Reading in
+                Reader in = new FileReader(directoryFloweringDates+csvFileName);
+                Iterable<CSVRecord> records = CSVFormat.RFC4180.withFirstRecordAsHeader().parse(in);
+                for (CSVRecord record: records)
+                {
+
+                    // Parse the cultivar code from TNAM
+                    String cropCultivarCode = record.get("CR") + record.get("TNAM").substring(0,6);
+
+                    // Parse PDAT and ADAT for computing the "days to flowering"
+                    int dtf, dth, pDDD = 0, aDDD = 0, hDDD = 0;
+                    if (record.get("PDAT").length()>4)
+                        pDDD = Integer.parseInt(record.get("PDAT").substring(4));
+                    if (record.get("ADAT").length()>4)
+                        aDDD = Integer.parseInt(record.get("ADAT").substring(4));
+                    if (record.get("HDAT").length()>4)
+                        aDDD = Integer.parseInt(record.get("HDAT").substring(4));
+                    if (aDDD>0)
+                    {
+
+                        // Flowering date
+                        if (aDDD > pDDD)
+                            dtf = aDDD - pDDD + 1;
+                        else
+                            dtf = aDDD + (365 - pDDD) + 1;
+
+                        // Harvest date
+                        if (hDDD > pDDD)
+                            dth = hDDD - pDDD + 1;
+                        else
+                            dth = hDDD + (365 - pDDD) + 1;
+
+                        // Storing
+                        try
+                        {
+                            int dtfPrevious = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[0];
+                            int dtfNew = (dtf + dtfPrevious) / 2;
+
+                            int dthPrevious = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[1];
+                            int dthNew = (dth + dthPrevious) / 2;
+
+                            daysToFloweringByCultivar.put(cropCultivarCode, new int[]{ dtfNew, dthNew });
+                        }
+                        catch(Exception ex)
+                        {
+                            ex.printStackTrace();
+                        }
+                    }
+
+                } // For each row in the CSV file
+
+            } // For each CSV file
+
+            // Writing a CSV output file
+            if (printDaysToFlowering)
+            {
+                dataDaysToFlowering = directoryFloweringDates + fileDaysToFlowering + "_" + climateOption +".csv";
+                System.out.println("> Writing "+dataDaysToFlowering+"...");
+                try( FileWriter writer = new FileWriter(dataDaysToFlowering);
+                     CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT
+                             .withHeader("CultivarCode","AvgDaysToFlowering","AvgDaysToHarvest")))
+                {
+                    for(Map.Entry<Object, Object> entry : daysToFloweringByCultivar.entrySet())
+                    {
+                        String key = (String)entry.getKey();
+                        int[] value = (int[])entry.getValue();
+                        csvPrinter.printRecord(key, value[0], value[1]);
+                    }
+                    csvPrinter.flush();
+                }
+                catch (Exception ex)
+                {
+                    ex.printStackTrace();
+                }
+            }
+
+        }
+        return daysToFloweringByCultivar;
     }
 
 
 
     // List of Unit IDs
-    public static List getUnitInfo(String tableName)
+    public static Object[] getUnitInfo(String tableName)
     {
         int counter = 0;
         List unitInfo = Lists.newArrayList();
@@ -664,7 +645,8 @@ public class App
             }
         }
         catch (Exception e) { e.printStackTrace(); }
-        return unitInfo;
+        Object[] list = unitInfo.toArray(Object[]::new);
+        return list;
     }
 
 
@@ -691,19 +673,21 @@ public class App
 
 
     // File names
-    static String[] getCSVFileNames(String filePath)
+    static String[] getFileNames(String filePath, String filteringText)
     {
         File dir = new File(filePath);
-        FilenameFilter filter = (dir1, name) -> (name.toUpperCase().contains("CSV"));
-        return dir.list(filter);
+        FilenameFilter filter = (directory, name) -> (name.toUpperCase().contains(filteringText.toUpperCase()));
+        String[] list = dir.list(filter);
+        return list;
     }
-    static String[] getCSVFileNames(String filePath, String filteringText)
+    static String[] getFileNames(String filePath, String filteringText, int limitForDebugging)
     {
         File dir = new File(filePath);
-        FilenameFilter filter = (dir1, name) -> (name.toUpperCase().contains(filteringText.toUpperCase()));
-        return dir.list(filter);
+        FilenameFilter filter = (directory, name) -> (name.toUpperCase().contains(filteringText.toUpperCase()));
+        String[] list = Arrays.stream(dir.list(filter)).limit(limitForDebugging).toArray(String[]::new);
+        return list;
     }
-    static String[] getTxFileNames(String filePath)
+    static String[] getFileNames(String filePath)
     {
         File dir = new File(filePath);
         return dir.list();
