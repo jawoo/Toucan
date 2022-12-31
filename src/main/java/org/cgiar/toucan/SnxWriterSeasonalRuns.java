@@ -1,7 +1,9 @@
 package org.cgiar.toucan;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Map;
 import java.util.TreeMap;
@@ -299,29 +301,29 @@ public class SnxWriterSeasonalRuns
                 snxSectionSimulationControls;
 
         // Write
+        String snxFile = App.directoryThreads+"T"+threadID+App.d+"TOUCAN"+dfTT.format(threadID)+".SNX";
         try
         {
-            String sqxFile = App.directoryWorking+"T"+threadID+App.d+"TOUCAN"+dfTT.format(threadID)+".SNX";
-            BufferedWriter writer = new BufferedWriter(new FileWriter(sqxFile));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(snxFile));
             writer.write(snx);
             writer.close();
         }
-        catch (Exception ex)
+        catch (IOException ex)
         {
-            ex.printStackTrace();
+            System.out.println("> Skipping a file due to the locked file exception...");
         }
 
         // Write
+        String batchFile = App.directoryThreads+"T"+threadID+App.d+"DSSBatch.v48";
         try
         {
-            String batchFile = App.directoryWorking+"T"+threadID+App.d+"DSSBatch.v48";
             BufferedWriter writer = new BufferedWriter(new FileWriter(batchFile));
             writer.write(batch.toString());
             writer.close();
         }
-        catch (Exception ex)
+        catch (IOException ex)
         {
-            ex.printStackTrace();
+            System.out.println("> Skipping a file due to the locked file exception...");
         }
 
     }

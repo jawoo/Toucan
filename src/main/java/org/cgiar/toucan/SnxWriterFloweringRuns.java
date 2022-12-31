@@ -1,7 +1,9 @@
 package org.cgiar.toucan;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.text.DecimalFormat;
 
 public class SnxWriterFloweringRuns
@@ -113,16 +115,16 @@ public class SnxWriterFloweringRuns
                 snxSectionSimulationControls;
 
         // Write
-        String snxFile = App.directoryWorking+"T"+threadID+ App.d+"TOUCAN"+dfTT.format(threadID)+".SNX";
+        String snxFile = App.directoryThreads+"T"+threadID+ App.d+"TOUCAN"+dfTT.format(threadID)+".SNX";
         try
         {
             BufferedWriter writer = new BufferedWriter(new FileWriter(snxFile));
             writer.write(snx);
             writer.close();
         }
-        catch (Exception ex)
+        catch (IOException ex)
         {
-            ex.printStackTrace();
+            System.out.println("> Skipping a file due to the locked file exception...");
         }
 
         // Batch file
@@ -132,16 +134,16 @@ public class SnxWriterFloweringRuns
         batch.append("TOUCAN").append(dfTT.format(threadID)).append(".SNX                                                                                     ").append(dfTT.format(1)).append("      1      0      0      0\n");
 
         // Write
-        String batchFile = App.directoryWorking+"T"+threadID+App.d+"DSSBatch.v48";
+        String batchFile = App.directoryThreads+"T"+threadID+App.d+"DSSBatch.v48";
         try
         {
             BufferedWriter writer = new BufferedWriter(new FileWriter(batchFile));
             writer.write(batch.toString());
             writer.close();
         }
-        catch (Exception ex)
+        catch (IOException ex)
         {
-            ex.printStackTrace();
+            System.out.println("> Skipping a file due to the locked file exception...");
         }
 
     }

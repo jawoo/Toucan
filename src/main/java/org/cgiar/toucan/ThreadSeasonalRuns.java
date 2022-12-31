@@ -61,7 +61,7 @@ public class ThreadSeasonalRuns implements Callable<Integer>
         {
             weatherFileName = (String)weatherAndPlantingDate[0];
             File weatherSource = new File(App.directoryWeather+weatherFileName);
-            File weatherDestination = new File(App.directoryWorking+"T"+threadID+App.d+"WEATHERS.WTG");
+            File weatherDestination = new File(App.directoryThreads+"T"+threadID+App.d+"WEATHERS.WTG");
             Utility.copyFileUsingStream(weatherSource, weatherDestination);
             weatherFound = true;
         }
@@ -79,7 +79,7 @@ public class ThreadSeasonalRuns implements Callable<Integer>
             soilProfile = Utility.updateSoilProfileDepth(soilProfile, soilRootingDepth);
 
             // Write soil file
-            String soilFile = App.directoryWorking+"T"+threadID+ App.d+soilProfileID.substring(0,2)+".SOL";
+            String soilFile = App.directoryThreads+"T"+threadID+ App.d+soilProfileID.substring(0,2)+".SOL";
             try
             {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(soilFile));
@@ -323,7 +323,7 @@ public class ThreadSeasonalRuns implements Callable<Integer>
                     exitCode = ExeRunner.dscsm048("N");
                     if (exitCode == 0)
                     {
-                        File outputSource = new File(App.directoryWorking + "T" + threadID + App.d + "summary.csv");
+                        File outputSource = new File(App.directoryThreads + "T" + threadID + App.d + "summary.csv");
                         File outputDestination = new File(App.directoryOutput + "U" + unitId + "_C" + cell5m + "_" + climateOption + "_S" + s + "_" + runLabel + "_" + weatherSequence + ".csv");
                         outputDestination.setReadable(true, false);
                         outputDestination.setExecutable(true, false);

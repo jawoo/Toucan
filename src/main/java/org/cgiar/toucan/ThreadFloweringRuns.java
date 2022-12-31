@@ -47,7 +47,7 @@ public class ThreadFloweringRuns implements Callable<Integer>
         {
 
             // Delete the previous copy
-            String wtgFileName = App.directoryWorking+"T"+threadID+App.d+"WEATHERS.WTG";
+            String wtgFileName = App.directoryThreads+"T"+threadID+App.d+"WEATHERS.WTG";
             File wtgFile = new File(wtgFileName);
             wtgFile.delete();
 
@@ -71,7 +71,7 @@ public class ThreadFloweringRuns implements Callable<Integer>
             soilProfile = Utility.updateSoilProfileDepth(soilProfile, soilRootingDepth);
 
             // Write soil file
-            String soilFile = App.directoryWorking+"T"+threadID+ App.d+soilProfileID.substring(0,2)+".SOL";
+            String soilFile = App.directoryThreads+"T"+threadID+ App.d+soilProfileID.substring(0,2)+".SOL";
             try
             {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(soilFile));
@@ -99,7 +99,7 @@ public class ThreadFloweringRuns implements Callable<Integer>
             // Copy output file
             try
             {
-                File outputSource = new File(App.directoryWorking+"T"+threadID+App.d+"summary.csv");
+                File outputSource = new File(App.directoryThreads+"T"+threadID+App.d+"summary.csv");
                 File outputDestination = new File(App.directoryFloweringDates+weatherFileName.split("\\.")[0]+"_"+pdateOption+"_"+cultivarOption[1]+"_"+cultivarOption[2]+".csv");
                 outputDestination.setReadable(true, false);
                 outputDestination.setExecutable(true, false);

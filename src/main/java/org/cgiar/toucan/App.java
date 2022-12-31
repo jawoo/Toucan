@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 public class App
@@ -22,7 +23,7 @@ public class App
     static long timeInitial = System.currentTimeMillis();
     static String tableNameUnitInformation = "unit_information";
     static String OS = System.getProperty("os.name").toLowerCase();
-    static String d;
+    static String d = File.separator;
     static String filePlantingDate = "pdates";
     static String fileDaysToFlowering = "daystoflowering";
     static String directoryWorking;
@@ -35,6 +36,7 @@ public class App
     static String directoryFinal;
     static String directoryError;
     static String directorySource;
+    static String directoryThreads;
     static String dataPlantingDates;
     static String dataDaysToFlowering;
     static int numberOfThreads = 4;    // per box
@@ -99,26 +101,17 @@ public class App
 
             // OS-dependent settings
             System.out.println("> OS: "+OS.toUpperCase());
-            if (isWindows())
-            {
-                d = "\\";
-                directoryWorking = "C:\\DSSAT48\\Toucan\\";
-                directoryWeather = "C:\\DSSAT48\\Toucan\\_W\\2022-12_tt9106r2\\";
-            }
-            else if (isUnix())
-            {
-                d = "/";
-                directoryWorking = "/home/jkoo/toucan/";
-                directoryWeather = "/home/jkoo/weather/wtg/";
-            }
-            directoryMultiplePlatingDates = directoryWorking + "_M" + d;
-            directoryFloweringDates = directoryWorking + "_F" + d;
-            directoryInputPlatingDates = directoryWorking + "_P" + d;
-            directoryInput = directoryWorking + "_I" + d;
-            directoryOutput = directoryWorking + "_O" + d;
-            directoryFinal = directoryWorking + "_X" + d;
-            directoryError = directoryWorking + "_E" + d;
-            directorySource = directoryWorking + "_S" + d;
+            directoryWorking = "res" + d;
+            directoryWeather = directoryWorking + "weather" + d + "2022-12_tt9106r2" + d;
+            directorySource = directoryWorking + ".csm" + d;
+            directoryInput = directoryWorking + "input" + d;
+            directoryThreads = directoryWorking + "threads" + d;
+            directoryFinal = directoryWorking + "result" + d;
+            directoryOutput = directoryWorking + ".temp" + d + "summary" + d;
+            directoryMultiplePlatingDates = directoryWorking + ".temp" + d + "multipleplanting" + d;
+            directoryFloweringDates = directoryWorking + ".temp" + d + "flowering" + d;
+            directoryInputPlatingDates = directoryWorking + ".temp" + d + "planting" + d;
+            directoryError = directoryWorking + ".temp" + d + "error" + d;
             dataPlantingDates = directoryInputPlatingDates + filePlantingDate + ".csv";
 
             // Copying Toucan workspace files
@@ -129,7 +122,7 @@ public class App
                 // Making T copies
                 for(int t=0; t<numberOfThreads; t++)
                 {
-                    String dT = directoryWorking+"T"+t;
+                    String dT = directoryThreads+"T"+t;
                     File toucanDestination = new File(dT);
                     FileUtils.copyDirectory(toucanSource, toucanDestination);
 
@@ -201,9 +194,6 @@ public class App
 
             // Get weather information
             String[] weatherInfo = getFileNames(directoryWeather, "WTH", 0);
-
-            // Reduce the number of threads to match with number of units
-            //if (numberOfThreads>numberOfUnits) numberOfThreads = numberOfUnits;
 
 
             /*
@@ -406,7 +396,15 @@ public class App
                         {
                             int pd = (Integer) plantingDatesToSimulate.get(weatherKey);
                             if (pd <= 0) pd = pdMean;
-                            Future<Integer> future = executor.submit(new ThreadFloweringRuns(o, threadID, weatherFileName, pd, cultivarOption, plantingDateOptionLabel, co2, firstPlantingYear));
+
+                            //Future<Integer> future = executor.submit(new ThreadFloweringRuns(o, threadID, weatherFileName, pd, cultivarOption, plantingDateOptionLabel, co2, firstPlantingYear));
+                            int finalThreadID = threadID;
+                            int finalPd = pd;
+                            CompletableFuture<Integer> future = CompletableFuture.supplyAsync(() ->
+                            {
+                                ThreadFloweringRuns tfr = new ThreadFloweringRuns(o, finalThreadID, weatherFileName, finalPd, cultivarOption, plantingDateOptionLabel, co2, firstPlantingYear);
+                                return tfr.call();
+                            });
                             list.add(future);
                             threadID++;
                             if (threadID==numberOfThreads) threadID = 0;

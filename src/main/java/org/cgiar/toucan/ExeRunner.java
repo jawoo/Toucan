@@ -7,6 +7,8 @@ import java.util.Date;
 public class ExeRunner
 {
 
+    static DecimalFormat dfTT  = new DecimalFormat("00");
+
     // Run DSSAT
     public static int dscsm048(int threadID, String runMode)
     {
@@ -18,7 +20,7 @@ public class ExeRunner
 
             // Execution using ProcessBuilder
             ProcessBuilder pb = new ProcessBuilder();
-            pb.directory(new File(App.directoryWorking+"T"+threadID));
+            pb.directory(new File(App.directoryThreads+"T"+threadID));
 
             // OS dependent
             if (App.isWindows())
@@ -36,7 +38,8 @@ public class ExeRunner
 
             // Error?
             exitCode = p.waitFor();
-            if (exitCode>0)
+            File error = new File(App.directoryThreads+"T"+threadID+App.d+"ERROR.OUT");
+            if (error.exists())
             {
 
                 // Copy problematic files
@@ -46,7 +49,7 @@ public class ExeRunner
                 {
 
                     // SNX file
-                    File outputSource = new File(App.directoryWorking+"T"+threadID+App.d+"TOUCAN00.S"+runMode+"X");
+                    File outputSource = new File(App.directoryThreads+"T"+threadID+App.d+"TOUCAN"+dfTT.format(threadID)+".S"+runMode+"X");
                     File outputDestination = new File(App.directoryError+"TOUCAN"+threadID+"_"+timeStamp+".S"+runMode+"X");
                     outputDestination.setReadable(true, false);
                     outputDestination.setExecutable(true, false);
@@ -54,7 +57,7 @@ public class ExeRunner
                     com.google.common.io.Files.copy(outputSource, outputDestination);
 
                     // Error file
-                    File errorSource = new File(App.directoryWorking+"T"+threadID+App.d+"ERROR.OUT");
+                    File errorSource = new File(App.directoryThreads+"T"+threadID+App.d+"ERROR.OUT");
                     File errorDestination = new File(App.directoryError+"ERROR_"+threadID+"_"+timeStamp+".S"+runMode+"X");
                     errorDestination.setReadable(true, false);
                     errorDestination.setExecutable(true, false);
@@ -88,7 +91,7 @@ public class ExeRunner
 
             // Execution using ProcessBuilder
             ProcessBuilder pb = new ProcessBuilder();
-            pb.directory(new File(App.directoryWorking+"T"+threadID));
+            pb.directory(new File(App.directoryThreads+"T"+threadID));
 
             // OS dependent
             if (App.isWindows())
@@ -106,7 +109,8 @@ public class ExeRunner
 
             // Error?
             exitCode = p.waitFor();
-            if (exitCode>0)
+            File error = new File(App.directoryThreads+"T"+threadID+App.d+"ERROR.OUT");
+            if (error.exists())
             {
 
                 // Copy problematic files
@@ -114,7 +118,7 @@ public class ExeRunner
                 {
                     DecimalFormat dfXX = new DecimalFormat("00");
                     String xx = dfXX.format(threadID);
-                    File outputSource = new File(App.directoryWorking+"T"+threadID+App.d+"TOUCAN"+xx+".S"+runMode+"X");
+                    File outputSource = new File(App.directoryThreads+"T"+threadID+App.d+"TOUCAN"+xx+".S"+runMode+"X");
                     File outputDestination = new File(App.directoryError+"TOUCAN"+xx+".S"+runMode+"X");
                     com.google.common.io.Files.copy(outputSource, outputDestination);
                 }
