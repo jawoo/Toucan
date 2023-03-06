@@ -43,6 +43,11 @@ cp ~/codebase/dssat-csm-os/Data/Pest/* ./.csm
 cp ~/codebase/dssat-csm-os/Data/StandardData/* ./.csm
 cp ~/codebase/dssat-csm-os/build/bin/dscsm048 ./.csm/DSCSM048.EXE
 ```
+And, while we're at it, also create some directories to collect and process temporary files.
+```
+cd ~/codebase/Toucan/res/.temp
+mkdir summary multipleplanting flowering planting error
+```
 
 ## 4. Flag which cultivar to use in the simulation
 You'll need to flag in the cultivar file (*.CUL) to tell the program which cultivar to use. Open the cultivar file for the crop you'd like to simulation (e.g., MZCER.048.CUL) in the res/.csm directory and add space and an asterisk at the end of the line, like the following:
