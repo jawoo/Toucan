@@ -33,7 +33,7 @@ mvn package
 ```
 
 ## 3. Copy DSSAT files to the resource directory
-
+For the sake of simplicity, I keep *all* files into one directory with no subdirectories.
 ```
 cd ~/codebase/Toucan/res
 mkdir -p .csm .temp result threads
