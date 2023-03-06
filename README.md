@@ -1,6 +1,6 @@
 # Toucan
 
-##1. Compiling DSSAT
+## 1. Compiling DSSAT
 (Assuming Amazon Linux 2)
 
 ```
@@ -19,7 +19,7 @@ make
 ```
 Now you have the DSSAT executable file ready to go!
 
-##2. Cloning Toucan from this repo
+## 2. Cloning Toucan from this repo
 (Toucan is the cute name I gave to my Java program that batch-runs DSSAT)
 
 ```
@@ -30,4 +30,26 @@ sudo yum install maven
 mvn install
 mvn compile
 mvn package
+```
+
+## 3. Copy DSSAT files to the resource directory
+
+```
+cd ~/codebase/Toucan/res
+mkdir -p .csm .temp result threads
+cp ~/codebase/dssat-csm-os/Data/* ./.csm
+cp ~/codebase/dssat-csm-os/Data/Genotype/* ./.csm
+cp ~/codebase/dssat-csm-os/Data/Pest/* ./.csm
+cp ~/codebase/dssat-csm-os/Data/StandardData/* ./.csm
+cp ~/codebase/dssat-csm-os/build/bin/dscsm048 ./.csm/DSCSM048.EXE
+```
+
+## 4. Flag which cultivar to use in the simulation
+You'll need to flag in the cultivar file (*.CUL) to tell the program which cultivar to use. Open the cultivar file for the crop you'd like to simulation (e.g., MZCER.048.CUL) in the res/.csm directory and add space and an asterisk at the end of the line. 
+
+## 5. Now you can run Toucan!
+
+```
+cd ~/codebase/Toucan/
+java -cp "target/ToucanSNX-1.0-SNAPSHOT.jar:lib/*" org.cgiar.toucan.App
 ```
