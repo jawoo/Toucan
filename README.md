@@ -45,7 +45,12 @@ cp ~/codebase/dssat-csm-os/build/bin/dscsm048 ./.csm/DSCSM048.EXE
 ```
 
 ## 4. Flag which cultivar to use in the simulation
-You'll need to flag in the cultivar file (*.CUL) to tell the program which cultivar to use. Open the cultivar file for the crop you'd like to simulation (e.g., MZCER.048.CUL) in the res/.csm directory and add space and an asterisk at the end of the line. 
+You'll need to flag in the cultivar file (*.CUL) to tell the program which cultivar to use. Open the cultivar file for the crop you'd like to simulation (e.g., MZCER.048.CUL) in the res/.csm directory and add space and an asterisk at the end of the line, like the following:
+
+```
+990002 MEDIUM SEASON        . IB0001 200.0 0.300 800.0 700.0  8.50 38.90 *
+```
+You can flag as many cultivars as you like.
 
 ## 5. Now you can run Toucan!
 
