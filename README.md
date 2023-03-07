@@ -6,6 +6,7 @@ Amazon Linux 2:
 sudo yum install gcc-gfortran
 sudo yum install glibc-static
 sudo yum install git
+sudo yum install maven
 sudo yum install cmake
 mkdir codebase
 cd codebase
@@ -20,6 +21,7 @@ Or, Ubuntu:
 ```
 sudo apt install gfortran
 sudo apt install cmake
+sudo apt install maven
 mkdir codebase
 cd codebase
 git clone https://github.com/dssat/dssat-csm-os
@@ -38,7 +40,6 @@ Now you have the DSSAT executable file ready to go.
 cd ~/codebase
 git clone https://github.com/jawoo/Toucan
 cd Toucan
-sudo yum install maven
 mvn install
 mvn compile
 mvn package
