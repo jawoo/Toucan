@@ -57,9 +57,10 @@ You'll need to flag in the cultivar file (*.CUL) to tell the program which culti
 ```
 You can flag as many cultivars as you like.
 
-## 5. Now you can run Toucan!
+## 5. Run Toucan
 
 ```
 cd ~/codebase/Toucan/
 java -cp "target/ToucanSNX-1.0-SNAPSHOT.jar:lib/*" org.cgiar.toucan.App
 ```
+After all the batch runs are completed, you can pick up the merged CSV output file at ~/codebase/Toucan/res/result directory.
