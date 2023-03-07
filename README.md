@@ -12,9 +12,9 @@ mkdir codebase
 cd codebase
 git clone https://github.com/dssat/dssat-csm-os
 cd dscsm-csm-os
-mkdir build
-cd build
-cmake ..
+mkdir release
+cd release
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 ```
 Or, Ubuntu:
@@ -26,9 +26,9 @@ mkdir codebase
 cd codebase
 git clone https://github.com/dssat/dssat-csm-os
 cd dscsm-csm-os
-mkdir build
-cd build
-cmake ..
+mkdir release
+cd release
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 ```
 Now you have the DSSAT executable file ready to go.
@@ -54,7 +54,7 @@ cp ~/codebase/dssat-csm-os/Data/* ./.csm
 cp ~/codebase/dssat-csm-os/Data/Genotype/* ./.csm
 cp ~/codebase/dssat-csm-os/Data/Pest/* ./.csm
 cp ~/codebase/dssat-csm-os/Data/StandardData/* ./.csm
-cp ~/codebase/dssat-csm-os/build/bin/dscsm048 ./.csm/DSCSM048.EXE
+cp ~/codebase/dssat-csm-os/release/bin/dscsm048 ./.csm/DSCSM048.EXE
 ```
 And, while we're at it, also create some directories to collect and process temporary files.
 ```
