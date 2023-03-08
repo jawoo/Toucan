@@ -13,7 +13,6 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 public class App
@@ -207,7 +206,15 @@ public class App
             3. ADDITIONAL RUNS FOR RETRIEVING DAYS-TO-FLOWER FOR EACH VARIETY
             */
             System.out.println("> Retrieving days to flowering...");
-            TreeMap<Object, Object> daysToFloweringByCultivar = getFloweringDates(unitInfo, weatherInfo, plantingDatesToSimulate, climateOption, firstPlantingYear, co2);
+            TreeMap<Object, Object> daysToFloweringByCultivar = new TreeMap<>();
+            try
+            {
+                daysToFloweringByCultivar = getFloweringDates(unitInfo, weatherInfo, plantingDatesToSimulate, climateOption, firstPlantingYear, co2);
+            }
+            catch (Exception ex)
+            {
+                ex.printStackTrace();
+            }
 
 
             /*
