@@ -63,7 +63,7 @@ mkdir summary multipleplanting flowering planting error
 ```
 
 ## 4. Flag which cultivar to use in the simulation
-You'll need to flag in the cultivar file (*.CUL) to tell the program which cultivar to use. Open the cultivar file for the crop you'd like to simulation (e.g., MZCER.048.CUL) in the res/.csm directory and add space and an asterisk at the end of the line, like the following:
+You'll need to flag in the cultivar file (*.CUL) to tell the program which cultivar to use. Open the cultivar file for the crop you'd like to use (e.g., MZCER.048.CUL) in the res/.csm directory and add a space and an asterisk at the end of the line, like the following:
 
 ```
 990002 MEDIUM SEASON        . IB0001 200.0 0.300 800.0 700.0  8.50 38.90 *
