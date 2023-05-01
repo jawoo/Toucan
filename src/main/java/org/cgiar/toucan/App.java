@@ -6,6 +6,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FileUtils;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -23,7 +24,6 @@ public class App
     static String tableNameUnitInformation = "unit_information";
     static String OS = System.getProperty("os.name").toLowerCase();
     static String d = File.separator;
-    static String filePlantingDate = "pdates";
     static String fileDaysToFlowering = "daystoflowering";
     static String directoryWorking;
     static String directoryWeather;
@@ -61,16 +61,7 @@ public class App
     5: Planting Density
     6: CO2 Fertilization
     */
-    static boolean[] switchScenarios =
-    {
-        false,   //0
-        false,   //1
-        false,   //2
-        false,   //3
-        false,   //4
-        false,   //5
-        false    //6
-    };
+    static boolean[] switchScenarios = new boolean[7];
     static boolean scenarioCombinations = true;
 
     // To check if it's numeric
@@ -82,36 +73,77 @@ public class App
     {
 
         /*
+        0. SETTING PARAMETERS
+        */
+
+        try
+        {
+            // Load the YAML file
+            Yaml yaml = new Yaml();
+            FileInputStream inputStream = new FileInputStream("."+d+"config.yml");
+            Map<String, Object> config = yaml.load(inputStream);
+
+            // Assign parameter values
+            tableNameUnitInformation = (String)config.get("tableNameUnitInformation");
+            countryCode = (String)config.get("countryCode");
+            numberOfThreads = (int)config.get("numberOfThreads");
+            limitForDebugging = (int)config.get("limitForDebugging");
+            scenarioCombinations = (int)config.get("scenarioCombinations") > 0;
+
+            // Access nested elements for directories
+            Map<String, String> directories = (Map<String, String>)config.get("directory");
+            directoryWorking = directories.get("working") + d;
+            directoryWeather = directoryWorking + "weather" + d + directories.get("weather") + d;
+            directorySource = directoryWorking + directories.get("source") + d;
+            directoryInput = directoryWorking + directories.get("input") + d;
+            directoryThreads = directoryWorking + directories.get("threads") + d;
+            directoryFinal = directoryWorking + directories.get("result") + d;
+            directoryOutput = directoryWorking + directories.get("temp") + d + directories.get("summary") + d;
+            directoryMultiplePlatingDates = directoryWorking + directories.get("temp") + d + directories.get("planting") + d;
+            directoryFloweringDates = directoryWorking + directories.get("temp") + d + directories.get("flowering") + d;
+            directoryInputPlatingDates = directoryWorking + directories.get("temp") + d + directories.get("plantingDates") + d;
+            directoryError = directoryWorking + directories.get("temp") + d + directories.get("errors") + d;
+
+            // Access nested elements for data files
+            Map<String, String> dataFiles = (Map<String, String>)config.get("dataFile");
+            dataPlantingDates = directoryInputPlatingDates + dataFiles.get("plantingDates");
+
+            // Access nested elements for scenario switches
+            Map<String, Integer> scenarioSwitches = (Map<String, Integer>)config.get("scenarioSwitch");
+            switchScenarios[0] = scenarioSwitches.get("waterManagement") > 0;
+            switchScenarios[1] = scenarioSwitches.get("fertilizer") > 0;
+            switchScenarios[2] = scenarioSwitches.get("manure") > 0;
+            switchScenarios[3] = scenarioSwitches.get("residue") > 0;
+            switchScenarios[4] = scenarioSwitches.get("plantingWindow") > 0;
+            switchScenarios[5] = scenarioSwitches.get("plantingDensity") > 0;
+            switchScenarios[6] = scenarioSwitches.get("CO2fertilization") > 0;
+
+        }
+        catch (FileNotFoundException e)
+        {
+            e.printStackTrace();
+        }
+
+
+        /*
         1. PREPARATION
         */
         if (step1)
         {
 
-            // Parsing arguments
-            if (args.length>0 && args[0].length()==3)
-                countryCode = args[0];
-            System.out.println("> ISO3: "+countryCode);
-            if (args.length>0 && args[1].length()>0)
-                numberOfThreads = Integer.parseInt(args[1]);
-            System.out.println("> Number of threads: "+numberOfThreads);
-            if (args.length>0 && args[2].length()>0)
-                limitForDebugging = Integer.parseInt(args[2]);
-            System.out.println("> Limit: "+limitForDebugging);
-
-            // OS-dependent settings
+            // Showing some parameter values
             System.out.println("> OS: "+OS.toUpperCase());
-            directoryWorking = "res" + d;
-            directoryWeather = directoryWorking + "weather" + d + "2022-12_tt9106r2" + d;
-            directorySource = directoryWorking + ".csm" + d;
-            directoryInput = directoryWorking + "input" + d;
-            directoryThreads = directoryWorking + "threads" + d;
-            directoryFinal = directoryWorking + "result" + d;
-            directoryOutput = directoryWorking + ".temp" + d + "summary" + d;
-            directoryMultiplePlatingDates = directoryWorking + ".temp" + d + "multipleplanting" + d;
-            directoryFloweringDates = directoryWorking + ".temp" + d + "flowering" + d;
-            directoryInputPlatingDates = directoryWorking + ".temp" + d + "planting" + d;
-            directoryError = directoryWorking + ".temp" + d + "error" + d;
-            dataPlantingDates = directoryInputPlatingDates + filePlantingDate + ".csv";
+            System.out.println("> ISO3: "+countryCode);
+            System.out.println("> Number of threads: "+numberOfThreads);
+            System.out.println("> Limit: "+limitForDebugging);
+            System.out.println("> Weather data: "+directoryWeather);
+            System.out.println("> Management practice - Water: "+(switchScenarios[0] ? "ON" : "OFF"));
+            System.out.println("> Management practice - Fertilizer: "+(switchScenarios[1] ? "ON" : "OFF"));
+            System.out.println("> Management practice - Manure: "+(switchScenarios[2] ? "ON" : "OFF"));
+            System.out.println("> Management practice - Residue: "+(switchScenarios[3] ? "ON" : "OFF"));
+            System.out.println("> Management practice - Planting window: "+(switchScenarios[4] ? "ON" : "OFF"));
+            System.out.println("> Management practice - Planting density: "+(switchScenarios[5] ? "ON" : "OFF"));
+            System.out.println("> Management practice - CO2 fertilization: "+(switchScenarios[6] ? "ON" : "OFF"));
 
             // Copying Toucan workspace files
             File toucanSource = new File(directorySource);
