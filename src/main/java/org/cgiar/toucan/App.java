@@ -92,7 +92,7 @@ public class App
 
             // Access nested elements for directories
             Map<String, String> directories = (Map<String, String>)config.get("directory");
-            directoryWorking = directories.get("working") + d;
+            directoryWorking = "." + App.d + directories.get("working") + d;
             directoryWeather = directoryWorking + "weather" + d + directories.get("weather") + d;
             directorySource = directoryWorking + directories.get("source") + d;
             directoryInput = directoryWorking + directories.get("input") + d;
@@ -379,7 +379,7 @@ public class App
     public static TreeMap<Object, Object> getFloweringDates(Object[] unitInfo, String[] weatherInfo,
                                                             TreeMap<Object, Object> plantingDatesToSimulate,
                                                             String climateOption,
-                                                            int firstPlantingYear, int co2) throws IOException, ExecutionException, InterruptedException {
+                                                            int firstPlantingYear, int co2) throws IOException {
         TreeMap<Object, Object> daysToFloweringByCultivar = new TreeMap<>();
         String plantingDateOptionLabel = "PB";
         int numberOfUnits = unitInfo.length;
@@ -387,11 +387,25 @@ public class App
         // Distribute weather files over threads
         if (step3 && numberOfUnits>0)
         {
-            int u = 0;
             int threadID = 0;
             ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
-            List<Future<Integer>> list = new ArrayList<>();
-            while(u < numberOfUnits)
+            List<Future<Integer>> futures = new ArrayList<>();
+
+            // Let's just pick 10 random units
+            int[] subUnits = new int[numberOfUnits];
+            if (numberOfUnits>10)
+            {
+                subUnits = new int[10];
+                Random random = new Random();
+                for (int i = 0; i < subUnits.length; i++)
+                    subUnits[i] = random.nextInt(numberOfUnits);
+            }
+            else
+                for (int i = 0; i < numberOfUnits; i++)
+                    subUnits[i] = i;
+
+            // Looping through subUnits
+            for (int u: subUnits)
             {
                 try
                 {
@@ -410,7 +424,7 @@ public class App
                     String[] weatherInfoSubset;
                     if (weatherInfo.length>10)
                     {
-                        weatherInfoSubset = new String[10];
+                        weatherInfoSubset = new String[10]; // Let's just pick 10
                         int min = 0;
                         int max = weatherInfo.length-1;
                         for (int i=0; i<10; i++)
@@ -435,16 +449,21 @@ public class App
                         {
                             int pd = (Integer) plantingDatesToSimulate.get(weatherKey);
                             if (pd <= 0) pd = pdMean;
-
-                            //Future<Integer> future = executor.submit(new ThreadFloweringRuns(o, threadID, weatherFileName, pd, cultivarOption, plantingDateOptionLabel, co2, firstPlantingYear));
                             int finalThreadID = threadID;
                             int finalPd = pd;
+
+                            Future<Integer> future = executor.submit(new ThreadFloweringRuns(o, finalThreadID, weatherFileName, finalPd, cultivarOption, plantingDateOptionLabel, co2, firstPlantingYear));
+                            futures.add(future);
+
+                            /*
                             CompletableFuture<Integer> future = CompletableFuture.supplyAsync(() ->
                             {
                                 ThreadFloweringRuns tfr = new ThreadFloweringRuns(o, finalThreadID, weatherFileName, finalPd, cultivarOption, plantingDateOptionLabel, co2, firstPlantingYear);
                                 return tfr.call();
                             });
                             list.add(future);
+                            */
+
                             threadID++;
                             if (threadID==numberOfThreads) threadID = 0;
                         }
@@ -456,47 +475,66 @@ public class App
                 {
                     ex.printStackTrace();
                 }
-                u++;
-
             }
 
             // Execute and retrieve the exit code
-            for (Future<Integer> future: list)
+            for (Future<Integer> future: futures)
             {
-                int exitCode = future.get();
-                if (exitCode>0) System.out.println("> Failed to find good flowering dates...");
+                try
+                {
+                    int exitCode = future.get();
+                    if (exitCode>0) System.out.println("> Failed to find good flowering dates...");
+                }
+                catch(InterruptedException | ExecutionException | NumberFormatException e)
+                {
+                    e.printStackTrace();
+                }
             }
+
+            // Shutdown the executor
             executor.shutdown();
+            try
+            {
+                // Wait for all tasks to complete before continuing.
+                if (!executor.awaitTermination(60, TimeUnit.SECONDS))
+                {
+                    // Cancel currently executing tasks
+                    executor.shutdownNow();
+                }
+            }
+            catch (InterruptedException ex)
+            {
+                // Cancel if current thread also interrupted
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
 
             // Collect output files
             String[] csvFileNames = getFileNames(directoryFloweringDates, "CSV");
 
             // For each CSV file
-            for (String csvFileName: csvFileNames)
-            {
+            for (String csvFileName : csvFileNames) {
 
                 // Status
-                System.out.println("> Analyzing "+csvFileName+"...");
+                System.out.println("> Analyzing " + csvFileName + "...");
 
                 // Reading in
-                Reader in = new FileReader(directoryFloweringDates+csvFileName);
+                Reader in = new FileReader(directoryFloweringDates + csvFileName);
                 Iterable<CSVRecord> records = CSVFormat.RFC4180.withFirstRecordAsHeader().parse(in);
-                for (CSVRecord record: records)
-                {
+                for (CSVRecord record : records) {
 
                     // Parse the cultivar code from TNAM
-                    String cropCultivarCode = record.get("CR") + record.get("TNAM").substring(0,6);
+                    String cropCultivarCode = record.get("CR") + record.get("TNAM").substring(0, 6);
 
                     // Parse PDAT and ADAT for computing the "days to flowering"
                     int dtf, dth, pDDD = 0, aDDD = 0, hDDD = 0;
-                    if (record.get("PDAT").length()>4)
+                    if (record.get("PDAT").length() > 4)
                         pDDD = Integer.parseInt(record.get("PDAT").substring(4));
-                    if (record.get("ADAT").length()>4)
+                    if (record.get("ADAT").length() > 4)
                         aDDD = Integer.parseInt(record.get("ADAT").substring(4));
-                    if (record.get("HDAT").length()>4)
+                    if (record.get("HDAT").length() > 4)
                         aDDD = Integer.parseInt(record.get("HDAT").substring(4));
-                    if (aDDD>0)
-                    {
+                    if (aDDD > 0) {
 
                         // Flowering date
                         if (aDDD > pDDD)
@@ -511,18 +549,15 @@ public class App
                             dth = hDDD + (365 - pDDD) + 1;
 
                         // Storing
-                        try
-                        {
-                            int dtfPrevious = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[0];
+                        try {
+                            int dtfPrevious = ((int[]) daysToFloweringByCultivar.get(cropCultivarCode))[0];
                             int dtfNew = (dtf + dtfPrevious) / 2;
 
-                            int dthPrevious = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[1];
+                            int dthPrevious = ((int[]) daysToFloweringByCultivar.get(cropCultivarCode))[1];
                             int dthNew = (dth + dthPrevious) / 2;
 
-                            daysToFloweringByCultivar.put(cropCultivarCode, new int[]{ dtfNew, dthNew });
-                        }
-                        catch(Exception ex)
-                        {
+                            daysToFloweringByCultivar.put(cropCultivarCode, new int[]{dtfNew, dthNew});
+                        } catch (Exception ex) {
                             ex.printStackTrace();
                         }
                     }
@@ -532,24 +567,19 @@ public class App
             } // For each CSV file
 
             // Writing a CSV output file
-            if (printDaysToFlowering)
-            {
-                dataDaysToFlowering = directoryFloweringDates + fileDaysToFlowering + "_" + climateOption +".csv";
-                System.out.println("> Writing "+dataDaysToFlowering+"...");
-                try( FileWriter writer = new FileWriter(dataDaysToFlowering);
+            if (printDaysToFlowering) {
+                dataDaysToFlowering = directoryFloweringDates + fileDaysToFlowering + "_" + climateOption + ".csv";
+                System.out.println("> Writing " + dataDaysToFlowering + "...");
+                try (FileWriter writer = new FileWriter(dataDaysToFlowering);
                      CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT
-                             .withHeader("CultivarCode","AvgDaysToFlowering","AvgDaysToHarvest")))
-                {
-                    for(Map.Entry<Object, Object> entry : daysToFloweringByCultivar.entrySet())
-                    {
-                        String key = (String)entry.getKey();
-                        int[] value = (int[])entry.getValue();
+                             .withHeader("CultivarCode", "AvgDaysToFlowering", "AvgDaysToHarvest"))) {
+                    for (Map.Entry<Object, Object> entry : daysToFloweringByCultivar.entrySet()) {
+                        String key = (String) entry.getKey();
+                        int[] value = (int[]) entry.getValue();
                         csvPrinter.printRecord(key, value[0], value[1]);
                     }
                     csvPrinter.flush();
-                }
-                catch (Exception ex)
-                {
+                } catch (Exception ex) {
                     ex.printStackTrace();
                 }
             }

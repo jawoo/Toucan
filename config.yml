@@ -3,7 +3,7 @@ countryCode: ETH
 numberOfThreads: 1
 limitForDebugging: 0
 directory:
-  weather: 2022-12_tt9106r2
+  weather: 2022-12_tt9106r2_debug
   working: res
   source: .csm
   temp: .temp

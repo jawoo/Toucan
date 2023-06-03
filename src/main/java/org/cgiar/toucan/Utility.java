@@ -17,7 +17,10 @@ public class Utility
     {
         String crlf	= System.getProperty("line.separator");
         String[] soilProfileByLine = soilProfile.split(crlf);
-        int hc27ID = Integer.parseInt(soilProfileByLine[2].substring(55,57).trim());
+        String id = soilProfileByLine[2].substring(55,57).trim();
+        int hc27ID = 14; // Default
+        if (App.isNumeric(id))
+            hc27ID = Integer.parseInt(soilProfileByLine[2].substring(55, 57).trim());
         double[] slocByLayer = getSlocByLayer(hc27ID);
         StringBuilder soilProfileModified = new StringBuilder();
 
@@ -117,13 +120,17 @@ public class Utility
         {
             if (!slbMaxFound)
             {
-                int slb = Integer.parseInt(soilProfileByLine[s].substring(3,6).trim());
-                if (slb<slbMax)
-                    soilProfileModified.append(soilProfileByLine[s]).append(crlf);
-                else
+                String d = soilProfileByLine[s].substring(3,6).trim();
+                if (App.isNumeric(d))
                 {
-                    soilProfileModified.append("   ").append(dfDDD.format(slbMax)).append(soilProfileByLine[s].substring(6)).append(crlf);
-                    slbMaxFound = true;
+                    int slb = Integer.parseInt(d);
+                    if (slb<slbMax)
+                        soilProfileModified.append(soilProfileByLine[s]).append(crlf);
+                    else
+                    {
+                        soilProfileModified.append("   ").append(dfDDD.format(slbMax)).append(soilProfileByLine[s].substring(6)).append(crlf);
+                        slbMaxFound = true;
+                    }
                 }
             }
         }

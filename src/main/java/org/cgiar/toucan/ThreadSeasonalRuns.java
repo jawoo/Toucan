@@ -75,7 +75,7 @@ public class ThreadSeasonalRuns implements Callable<Integer>
         {
 
             // Write soil profile
-            soilProfile = Utility.updateSoilOrganicCarbonContents(soilProfile);
+            // soilProfile = Utility.updateSoilOrganicCarbonContents(soilProfile);  // <-- To handle erroneous SOC values in SoilGrids...
             soilProfile = Utility.updateSoilProfileDepth(soilProfile, soilRootingDepth);
 
             // Write soil file

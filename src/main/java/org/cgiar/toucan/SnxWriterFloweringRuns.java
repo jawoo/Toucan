@@ -19,7 +19,7 @@ public class SnxWriterFloweringRuns
             Object[] cultivarOption,
             int co2,
             int firstPlantingYear
-            )
+            ) throws NumberFormatException
     {
 
         // Unit information

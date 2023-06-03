@@ -70,7 +70,7 @@ public class ExeRunner
                     ex.printStackTrace();
                 }
                 System.out.println("> Thread " + threadID + ": Error code " + exitCode);
-                System.exit(0);
+                //System.exit(0);
             }
         }
         catch (Exception e)

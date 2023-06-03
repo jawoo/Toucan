@@ -43,23 +43,33 @@ public class ThreadFloweringRuns implements Callable<Integer>
 
         // Copy weather file
         boolean weatherFound = false;
+        String wtgFileName = App.directoryThreads+"T"+threadID+App.d+"WEATHERS.WTG";
         try
         {
 
             // Delete the previous copy
-            String wtgFileName = App.directoryThreads+"T"+threadID+App.d+"WEATHERS.WTG";
             File wtgFile = new File(wtgFileName);
             wtgFile.delete();
+
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.out.println("> Flowering: Previous weather file NOT deleted at "+weatherFileName);
+        }
+        try
+        {
 
             // Get a new copy for this simulation
             File weatherSource = new File(App.directoryWeather+weatherFileName);
             File weatherDestination = new File(wtgFileName);
             Utility.copyFileUsingStream(weatherSource, weatherDestination);
             weatherFound = true;
+
         }
         catch (IOException e)
         {
-            //e.printStackTrace();
+            e.printStackTrace();
             System.out.println("> Flowering: Weather file NOT copied at "+weatherFileName);
         }
 
@@ -100,11 +110,14 @@ public class ThreadFloweringRuns implements Callable<Integer>
             try
             {
                 File outputSource = new File(App.directoryThreads+"T"+threadID+App.d+"summary.csv");
-                File outputDestination = new File(App.directoryFloweringDates+weatherFileName.split("\\.")[0]+"_"+pdateOption+"_"+cultivarOption[1]+"_"+cultivarOption[2]+".csv");
-                outputDestination.setReadable(true, false);
-                outputDestination.setExecutable(true, false);
-                outputDestination.setWritable(true, false);
-                Utility.copyFileUsingStream(outputSource, outputDestination);
+                if (outputSource.exists())
+                {
+                    File outputDestination = new File(App.directoryFloweringDates+weatherFileName.split("\\.")[0]+"_"+pdateOption+"_"+cultivarOption[1]+"_"+cultivarOption[2]+".csv");
+                    outputDestination.setReadable(true, false);
+                    outputDestination.setExecutable(true, false);
+                    outputDestination.setWritable(true, false);
+                    Utility.copyFileUsingStream(outputSource, outputDestination);
+                }
             }
             catch (FileNotFoundException e)
             {
