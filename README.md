@@ -40,9 +40,7 @@ Now you have the DSSAT executable file ready to go.
 cd ~/codebase
 git clone https://github.com/jawoo/Toucan
 cd Toucan
-mvn install
-mvn compile
-mvn package
+mvn clean compile assembly:single
 ```
 
 ## 3. Copy DSSAT files to the resource directory
@@ -51,6 +49,8 @@ For the sake of simplicity, I keep *all* files into one directory with no subdir
 cd ~/codebase/Toucan/res
 mkdir -p .csm .temp result threads
 cp ~/codebase/dssat-csm-os/Data/* ./.csm
+cp ~/codebase/dssat-csm-os/Data/BatchFiles/* ./.csm
+cp ~/codebase/dssat-csm-os/Data/Default/* ./.csm
 cp ~/codebase/dssat-csm-os/Data/Genotype/* ./.csm
 cp ~/codebase/dssat-csm-os/Data/Pest/* ./.csm
 cp ~/codebase/dssat-csm-os/Data/StandardData/* ./.csm
@@ -74,7 +74,7 @@ You can flag as many cultivars as you like.
 
 ```
 cd ~/codebase/Toucan/
-java -cp "target/ToucanSNX-1.0-SNAPSHOT.jar:lib/*" org.cgiar.toucan.App
+java -jar target/ToucanSNX-1.0-SNAPSHOT-jar-with-dependencies.jar
 ```
 The values of model input parameters are defined in the "config.yml" file in the root directory.
 
