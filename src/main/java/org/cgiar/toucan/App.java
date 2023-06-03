@@ -392,11 +392,11 @@ public class App
             ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
             List<Future<Integer>> futures = new ArrayList<>();
 
-            // Let's just pick 200 random units
+            // Let's just pick 20 random units
             int[] subUnits = new int[numberOfUnits];
-            if (numberOfUnits>200)
+            if (numberOfUnits>20)
             {
-                subUnits = new int[200];
+                subUnits = new int[20];
                 Random random = new Random();
                 for (int i = 0; i < subUnits.length; i++)
                     subUnits[i] = random.nextInt(numberOfUnits);
