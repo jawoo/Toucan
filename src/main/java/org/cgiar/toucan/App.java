@@ -144,6 +144,7 @@ public class App
             System.out.println("> Management practice - Planting window: "+(switchScenarios[4] ? "ON" : "OFF"));
             System.out.println("> Management practice - Planting density: "+(switchScenarios[5] ? "ON" : "OFF"));
             System.out.println("> Management practice - CO2 fertilization: "+(switchScenarios[6] ? "ON" : "OFF"));
+            System.out.println("> Management practice - Factorial combinations: "+(scenarioCombinations ? "ON" : "OFF"));
 
             // Copying Toucan workspace files
             File toucanSource = new File(directorySource);
@@ -391,11 +392,11 @@ public class App
             ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
             List<Future<Integer>> futures = new ArrayList<>();
 
-            // Let's just pick 10 random units
+            // Let's just pick 200 random units
             int[] subUnits = new int[numberOfUnits];
-            if (numberOfUnits>10)
+            if (numberOfUnits>200)
             {
-                subUnits = new int[10];
+                subUnits = new int[200];
                 Random random = new Random();
                 for (int i = 0; i < subUnits.length; i++)
                     subUnits[i] = random.nextInt(numberOfUnits);
@@ -513,7 +514,8 @@ public class App
                 // Reading in
                 Reader in = new FileReader(directoryFloweringDates + csvFileName);
                 Iterable<CSVRecord> records = CSVFormat.RFC4180.withFirstRecordAsHeader().parse(in);
-                for (CSVRecord record : records) {
+                for (CSVRecord record : records)
+                {
 
                     // Parse the cultivar code from TNAM
                     String cropCultivarCode = record.get("CR") + record.get("TNAM").substring(0, 6);
@@ -525,8 +527,9 @@ public class App
                     if (record.get("ADAT").length() > 4)
                         aDDD = Integer.parseInt(record.get("ADAT").substring(4));
                     if (record.get("HDAT").length() > 4)
-                        aDDD = Integer.parseInt(record.get("HDAT").substring(4));
-                    if (aDDD > 0) {
+                        hDDD = Integer.parseInt(record.get("HDAT").substring(4));
+                    if (pDDD>0 && aDDD>0 && hDDD>0)
+                    {
 
                         // Flowering date
                         if (aDDD > pDDD)
@@ -541,37 +544,57 @@ public class App
                             dth = hDDD + (365 - pDDD) + 1;
 
                         // Storing
-                        try {
-                            int dtfPrevious = ((int[]) daysToFloweringByCultivar.get(cropCultivarCode))[0];
-                            int dtfNew = (dtf + dtfPrevious) / 2;
+                        try
+                        {
 
-                            int dthPrevious = ((int[]) daysToFloweringByCultivar.get(cropCultivarCode))[1];
-                            int dthNew = (dth + dthPrevious) / 2;
+                            if (dtf>0 && dth>0 && dtf<dth)
+                            {
+                                int dtfPrevious = ((int[]) daysToFloweringByCultivar.get(cropCultivarCode))[0];
+                                int dtfNew = (dtf + dtfPrevious) / 2;
 
-                            daysToFloweringByCultivar.put(cropCultivarCode, new int[]{dtfNew, dthNew});
-                        } catch (Exception ex) {
+                                int dthPrevious = ((int[]) daysToFloweringByCultivar.get(cropCultivarCode))[1];
+                                int dthNew = (dth + dthPrevious) / 2;
+
+                                daysToFloweringByCultivar.put(cropCultivarCode, new int[]{dtfNew, dthNew});
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
                             ex.printStackTrace();
                         }
+
                     }
 
                 } // For each row in the CSV file
 
             } // For each CSV file
 
+            // Adding some default values to avoid errors
+            int dtfAvg = 60, dthAvg = 120;
+            daysToFloweringByCultivar.put("DEFAULT", new int[]{ dtfAvg, dthAvg });
+
             // Writing a CSV output file
-            if (printDaysToFlowering) {
+            if (printDaysToFlowering)
+            {
                 dataDaysToFlowering = directoryFloweringDates + fileDaysToFlowering + "_" + climateOption + ".csv";
                 System.out.println("> Writing " + dataDaysToFlowering + "...");
                 try (FileWriter writer = new FileWriter(dataDaysToFlowering);
                      CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT
-                             .withHeader("CultivarCode", "AvgDaysToFlowering", "AvgDaysToHarvest"))) {
-                    for (Map.Entry<Object, Object> entry : daysToFloweringByCultivar.entrySet()) {
+                             .withHeader("CultivarCode", "AvgDaysToFlowering", "AvgDaysToHarvest")))
+                {
+
+                    // Writing
+                    for (Map.Entry<Object, Object> entry : daysToFloweringByCultivar.entrySet())
+                    {
                         String key = (String) entry.getKey();
                         int[] value = (int[]) entry.getValue();
                         csvPrinter.printRecord(key, value[0], value[1]);
                     }
                     csvPrinter.flush();
-                } catch (Exception ex) {
+                }
+                catch (Exception ex)
+                {
                     ex.printStackTrace();
                 }
             }
@@ -622,8 +645,18 @@ public class App
                         int[] cultivarInfo = (int[])ou[9];
                         Object[] cultivarOption = new Object[]{ countryCode, cropCode, cultivarCode, cultivarName, cultivarInfo[0], cultivarInfo[1], cultivarInfo[2] };
                         String cropCultivarCode = cultivarOption[1] + (String)cultivarOption[2];
-                        int daysToFlowering = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[0];
-                        int daysToHarvest = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[1];
+                        int daysToFlowering, daysToHarvest;
+                        try
+                        {
+                            daysToFlowering = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[0];
+                            daysToHarvest = ((int[])daysToFloweringByCultivar.get(cropCultivarCode))[1];
+                        }
+                        catch(Exception e)
+                        {
+                            daysToFlowering = ((int[])daysToFloweringByCultivar.get("DEFAULT"))[0];
+                            daysToHarvest = ((int[])daysToFloweringByCultivar.get("DEFAULT"))[1];
+                            System.out.println("> Default phenology values used for "+cropCultivarCode);
+                        }
 
                         // Multiple weather files for this unit
                         for (String weatherFileName: weatherInfo)

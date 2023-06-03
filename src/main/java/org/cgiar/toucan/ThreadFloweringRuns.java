@@ -1,6 +1,7 @@
 package org.cgiar.toucan;
 
 import java.io.*;
+import java.util.Date;
 import java.util.concurrent.Callable;
 
 public class ThreadFloweringRuns implements Callable<Integer>
@@ -107,12 +108,14 @@ public class ThreadFloweringRuns implements Callable<Integer>
             exitCode = ExeRunner.dscsm048_flowering(threadID, "N");
 
             // Copy output file
+            Date date = new Date();
+            long timeStamp = date.getTime();
             try
             {
                 File outputSource = new File(App.directoryThreads+"T"+threadID+App.d+"summary.csv");
                 if (outputSource.exists())
                 {
-                    File outputDestination = new File(App.directoryFloweringDates+weatherFileName.split("\\.")[0]+"_"+pdateOption+"_"+cultivarOption[1]+"_"+cultivarOption[2]+".csv");
+                    File outputDestination = new File(App.directoryFloweringDates+weatherFileName.split("\\.")[0]+"_"+pdateOption+"_"+cultivarOption[1]+"_"+cultivarOption[2]+"_"+timeStamp+".csv");
                     outputDestination.setReadable(true, false);
                     outputDestination.setExecutable(true, false);
                     outputDestination.setWritable(true, false);
