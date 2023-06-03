@@ -452,19 +452,11 @@ public class App
                             int finalThreadID = threadID;
                             int finalPd = pd;
 
+                            // Multithreading
                             Future<Integer> future = executor.submit(new ThreadFloweringRuns(o, finalThreadID, weatherFileName, finalPd, cultivarOption, plantingDateOptionLabel, co2, firstPlantingYear));
                             futures.add(future);
-
-                            /*
-                            CompletableFuture<Integer> future = CompletableFuture.supplyAsync(() ->
-                            {
-                                ThreadFloweringRuns tfr = new ThreadFloweringRuns(o, finalThreadID, weatherFileName, finalPd, cultivarOption, plantingDateOptionLabel, co2, firstPlantingYear);
-                                return tfr.call();
-                            });
-                            list.add(future);
-                            */
-
                             threadID++;
+
                             if (threadID==numberOfThreads) threadID = 0;
                         }
 
@@ -602,7 +594,7 @@ public class App
         // Multithreading
         ThreadFactoryBuilder threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat("%d");
         ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads, threadFactoryBuilder.build());
-        List<Future<Integer>> list = new ArrayList<>();
+        List<Future<Integer>> futures = new ArrayList<>();
 
         // Looping through units
         for (int i = 0; i < numberOfUnits; i = i + 1)
@@ -642,7 +634,7 @@ public class App
 
                             // Multiple threads
                             Future<Integer> future = executor.submit(new ThreadSeasonalRuns(ou, weatherAndPlantingDate, cultivarOption, daysToFlowering, daysToHarvest, climateOption, progress, firstPlantingYear, co2History));
-                            list.add(future);
+                            futures.add(future);
                         }
 
                     }
@@ -657,11 +649,29 @@ public class App
         } // Looping through units
 
         // Retrieve
-        for (Future<Integer> future: list)
+        for (Future<Integer> future: futures)
         {
             future.get();
         }
+
+        // Shutdown the executor
         executor.shutdown();
+        try
+        {
+            // Wait for all tasks to complete before continuing.
+            if (!executor.awaitTermination(60, TimeUnit.SECONDS))
+            {
+                // Cancel currently executing tasks
+                executor.shutdownNow();
+            }
+        }
+        catch (InterruptedException ex)
+        {
+            // Cancel if current thread also interrupted
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
     }
 
 

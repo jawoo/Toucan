@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module version="4">
+  <component name="AdditionalModuleElements">
+    <content url="file://$MODULE_DIR$" dumb="true">
+      <excludeFolder url="file://$MODULE_DIR$/res/.csm" />
+      <excludeFolder url="file://$MODULE_DIR$/res/.temp" />
+      <excludeFolder url="file://$MODULE_DIR$/res/result" />
+      <excludeFolder url="file://$MODULE_DIR$/res/weather/2022-12_tt9106r2_debug" />
+    </content>
+  </component>
+</module>

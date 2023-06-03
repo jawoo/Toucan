@@ -29,8 +29,7 @@ public class SnxWriterSeasonalRuns
             Object[] weatherAndPlantingDate,
             String label,
             int firstPlantingYear
-            )
-    {
+            ) throws InterruptedException {
 
         // Thread ID?
         int threadID = Integer.parseInt(Thread.currentThread().getName());
@@ -302,29 +301,11 @@ public class SnxWriterSeasonalRuns
 
         // Write
         String snxFile = App.directoryThreads+"T"+threadID+App.d+"TOUCAN"+dfTT.format(threadID)+".SNX";
-        try
-        {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(snxFile));
-            writer.write(snx);
-            writer.close();
-        }
-        catch (IOException ex)
-        {
-            System.out.println("> Skipping a file due to the locked file exception...");
-        }
+        Utility.writeFile(snxFile, snx);
 
         // Write
         String batchFile = App.directoryThreads+"T"+threadID+App.d+"DSSBatch.v48";
-        try
-        {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(batchFile));
-            writer.write(batch.toString());
-            writer.close();
-        }
-        catch (IOException ex)
-        {
-            System.out.println("> Skipping a file due to the locked file exception...");
-        }
+        Utility.writeFile(batchFile, batch.toString());
 
     }
 

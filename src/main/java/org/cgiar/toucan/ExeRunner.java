@@ -10,7 +10,7 @@ public class ExeRunner
     static DecimalFormat dfTT  = new DecimalFormat("00");
 
     // Run DSSAT
-    public static int dscsm048(int threadID, String runMode)
+    public static int dscsm048_flowering(int threadID, String runMode)
     {
 
         int exitCode = 0;
@@ -50,19 +50,47 @@ public class ExeRunner
 
                     // SNX file
                     File outputSource = new File(App.directoryThreads+"T"+threadID+App.d+"TOUCAN"+dfTT.format(threadID)+".S"+runMode+"X");
-                    File outputDestination = new File(App.directoryError+"TOUCAN"+threadID+"_"+timeStamp+".S"+runMode+"X");
-                    outputDestination.setReadable(true, false);
-                    outputDestination.setExecutable(true, false);
-                    outputDestination.setWritable(true, false);
-                    com.google.common.io.Files.copy(outputSource, outputDestination);
+                    if (outputSource.exists())
+                    {
+                        File outputDestination = new File(App.directoryError+"F_TOUCAN"+threadID+"_"+timeStamp+".S"+runMode+"X");
+                        outputDestination.setReadable(true, false);
+                        outputDestination.setExecutable(true, false);
+                        outputDestination.setWritable(true, false);
+                        Utility.copyFileUsingStream(outputSource, outputDestination);
+                    }
+
+                    // INP file
+                    File inpSource = new File(App.directoryThreads+"T"+threadID+App.d+"DSSAT48.INP");
+                    if (inpSource.exists())
+                    {
+                        File inpDestination = new File(App.directoryError+"F_ERROR_"+threadID+"_"+timeStamp+"_DSSAT48.INP");
+                        inpDestination.setReadable(true, false);
+                        inpDestination.setExecutable(true, false);
+                        inpDestination.setWritable(true, false);
+                        Utility.copyFileUsingStream(inpSource, inpDestination);
+                    }
+
+                    // WARNING file
+                    File warningSource = new File(App.directoryThreads+"T"+threadID+App.d+"WARNING.OUT");
+                    if (warningSource.exists())
+                    {
+                        File warningDestination = new File(App.directoryError+"F_WARNING_"+threadID+"_"+timeStamp+".OUT");
+                        warningDestination.setReadable(true, false);
+                        warningDestination.setExecutable(true, false);
+                        warningDestination.setWritable(true, false);
+                        Utility.copyFileUsingStream(warningSource, warningDestination);
+                    }
 
                     // Error file
                     File errorSource = new File(App.directoryThreads+"T"+threadID+App.d+"ERROR.OUT");
-                    File errorDestination = new File(App.directoryError+"ERROR_"+threadID+"_"+timeStamp+".S"+runMode+"X");
-                    errorDestination.setReadable(true, false);
-                    errorDestination.setExecutable(true, false);
-                    errorDestination.setWritable(true, false);
-                    com.google.common.io.Files.copy(errorSource, errorDestination);
+                    if (errorSource.exists())
+                    {
+                        File errorDestination = new File(App.directoryError+"F_ERROR_"+threadID+"_"+timeStamp+".OUT");
+                        errorDestination.setReadable(true, false);
+                        errorDestination.setExecutable(true, false);
+                        errorDestination.setWritable(true, false);
+                        Utility.copyFileUsingStream(errorSource, errorDestination);
+                    }
 
                 }
                 catch (Exception ex)
@@ -80,7 +108,7 @@ public class ExeRunner
         return exitCode;
 
     }
-    public static int dscsm048(String runMode)
+    public static int dscsm048_seasonal(String runMode)
     {
 
         int threadID = Integer.parseInt(Thread.currentThread().getName());
@@ -116,11 +144,65 @@ public class ExeRunner
                 // Copy problematic files
                 try
                 {
-                    DecimalFormat dfXX = new DecimalFormat("00");
-                    String xx = dfXX.format(threadID);
-                    File outputSource = new File(App.directoryThreads+"T"+threadID+App.d+"TOUCAN"+xx+".S"+runMode+"X");
-                    File outputDestination = new File(App.directoryError+"TOUCAN"+xx+".S"+runMode+"X");
-                    com.google.common.io.Files.copy(outputSource, outputDestination);
+
+                    // Copy problematic files
+                    Date date = new Date();
+                    long timeStamp = date.getTime();
+                    try
+                    {
+
+                        // SNX file
+                        File outputSource = new File(App.directoryThreads+"T"+threadID+App.d+"TOUCAN"+dfTT.format(threadID)+".S"+runMode+"X");
+                        if (outputSource.exists())
+                        {
+                            File outputDestination = new File(App.directoryError+"F_TOUCAN"+threadID+"_"+timeStamp+".S"+runMode+"X");
+                            outputDestination.setReadable(true, false);
+                            outputDestination.setExecutable(true, false);
+                            outputDestination.setWritable(true, false);
+                            Utility.copyFileUsingStream(outputSource, outputDestination);
+                        }
+
+                        // INP file
+                        File inpSource = new File(App.directoryThreads+"T"+threadID+App.d+"DSSAT48.INP");
+                        if (inpSource.exists())
+                        {
+                            File inpDestination = new File(App.directoryError+"F_ERROR_"+threadID+"_"+timeStamp+"_DSSAT48.INP");
+                            inpDestination.setReadable(true, false);
+                            inpDestination.setExecutable(true, false);
+                            inpDestination.setWritable(true, false);
+                            Utility.copyFileUsingStream(inpSource, inpDestination);
+                        }
+
+                        // WARNING file
+                        File warningSource = new File(App.directoryThreads+"T"+threadID+App.d+"WARNING.OUT");
+                        if (warningSource.exists())
+                        {
+                            File warningDestination = new File(App.directoryError+"F_WARNING_"+threadID+"_"+timeStamp+".OUT");
+                            warningDestination.setReadable(true, false);
+                            warningDestination.setExecutable(true, false);
+                            warningDestination.setWritable(true, false);
+                            Utility.copyFileUsingStream(warningSource, warningDestination);
+                        }
+
+                        // Error file
+                        File errorSource = new File(App.directoryThreads+"T"+threadID+App.d+"ERROR.OUT");
+                        if (errorSource.exists())
+                        {
+                            File errorDestination = new File(App.directoryError+"F_ERROR_"+threadID+"_"+timeStamp+".OUT");
+                            errorDestination.setReadable(true, false);
+                            errorDestination.setExecutable(true, false);
+                            errorDestination.setWritable(true, false);
+                            Utility.copyFileUsingStream(errorSource, errorDestination);
+                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+                        ex.printStackTrace();
+                    }
+                    System.out.println("> Thread " + threadID + ": Error code " + exitCode);
+                    //System.exit(0);
+
                 }
                 catch (Exception ex)
                 {

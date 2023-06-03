@@ -1,6 +1,6 @@
 tableNameUnitInformation: unit_information
 countryCode: ETH
-numberOfThreads: 1
+numberOfThreads: 4
 limitForDebugging: 0
 directory:
   weather: 2022-12_tt9106r2_debug

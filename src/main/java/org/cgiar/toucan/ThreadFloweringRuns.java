@@ -67,7 +67,7 @@ public class ThreadFloweringRuns implements Callable<Integer>
             weatherFound = true;
 
         }
-        catch (IOException e)
+        catch (InterruptedException e)
         {
             e.printStackTrace();
             System.out.println("> Flowering: Weather file NOT copied at "+weatherFileName);
@@ -104,7 +104,7 @@ public class ThreadFloweringRuns implements Callable<Integer>
             }
 
             // Run it
-            exitCode = ExeRunner.dscsm048(threadID, "N");
+            exitCode = ExeRunner.dscsm048_flowering(threadID, "N");
 
             // Copy output file
             try
@@ -119,13 +119,9 @@ public class ThreadFloweringRuns implements Callable<Integer>
                     Utility.copyFileUsingStream(outputSource, outputDestination);
                 }
             }
-            catch (FileNotFoundException e)
+            catch (InterruptedException e)
             {
-                System.out.println("> Flowering: summary.csv file NOT found at "+weatherFileName);
-            }
-            catch (IOException e)
-            {
-                System.out.println("> Flowering simulation error occurred at "+weatherFileName);
+                throw new RuntimeException(e);
             }
 
         }

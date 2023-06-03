@@ -19,8 +19,7 @@ public class SnxWriterFloweringRuns
             Object[] cultivarOption,
             int co2,
             int firstPlantingYear
-            ) throws NumberFormatException
-    {
+            ) throws NumberFormatException, InterruptedException {
 
         // Unit information
         String soilProfileID = (String)o[2];
@@ -116,16 +115,7 @@ public class SnxWriterFloweringRuns
 
         // Write
         String snxFile = App.directoryThreads+"T"+threadID+ App.d+"TOUCAN"+dfTT.format(threadID)+".SNX";
-        try
-        {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(snxFile));
-            writer.write(snx);
-            writer.close();
-        }
-        catch (IOException ex)
-        {
-            System.out.println("> Skipping a file due to the locked file exception...");
-        }
+        Utility.writeFile(snxFile, snx);
 
         // Batch file
         StringBuilder batch = new StringBuilder("$BATCH(SEASONAL)\n" +
@@ -135,16 +125,7 @@ public class SnxWriterFloweringRuns
 
         // Write
         String batchFile = App.directoryThreads+"T"+threadID+App.d+"DSSBatch.v48";
-        try
-        {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(batchFile));
-            writer.write(batch.toString());
-            writer.close();
-        }
-        catch (IOException ex)
-        {
-            System.out.println("> Skipping a file due to the locked file exception...");
-        }
+        Utility.writeFile(batchFile, batch.toString());
 
     }
 

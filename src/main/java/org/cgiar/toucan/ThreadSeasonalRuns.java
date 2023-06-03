@@ -65,7 +65,7 @@ public class ThreadSeasonalRuns implements Callable<Integer>
             Utility.copyFileUsingStream(weatherSource, weatherDestination);
             weatherFound = true;
         }
-        catch (IOException exception)
+        catch (InterruptedException exception)
         {
             System.out.println("> Seasonal runs: Weather file NOT copied: "+weatherFileName);
         }
@@ -320,7 +320,7 @@ public class ThreadSeasonalRuns implements Callable<Integer>
                     String weatherSequence = weatherAndPlantingDate[0].toString().substring(0,4);
                     SnxWriterSeasonalRuns.runningTreatmentPackages(o, waterManagement, nRate, manureRate, cultivarOption, daysToFlowering, daysToHarvest, pdensityOption, residueHarvestPct, co2, weatherAndPlantingDate, labelWithAezSeason, firstPlantingYear);
                     System.out.println("> T" + dfTT.format(threadID) + ", " + progress + ", S" + (s+1) + "/" + ns + ", " + runLabel + ", SEQ: " + weatherSequence);
-                    exitCode = ExeRunner.dscsm048("N");
+                    exitCode = ExeRunner.dscsm048_seasonal("N");
                     if (exitCode == 0)
                     {
                         File outputSource = new File(App.directoryThreads + "T" + threadID + App.d + "summary.csv");

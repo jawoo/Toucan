@@ -107,16 +107,29 @@ public class Utility
     {
         DecimalFormat dfDDD = new DecimalFormat("000");
         String crlf	= System.getProperty("line.separator");
-        String[] soilProfileByLine = soilProfile.split(crlf);
         StringBuilder soilProfileModified = new StringBuilder();
+        String[] soilProfileByLine = soilProfile.split(crlf);
+
+        // Locating Tier 1 and Tier 2 layers
+        int lineNumberHeadingTier2 = 0;
+        for (int s=6; s<soilProfileByLine.length; s++)
+            if (soilProfileByLine[s].substring(0, 1).equals("@"))
+                lineNumberHeadingTier2 = s;
 
         // Setting the minimum depth as 40 cm, which is the median value of SLB_MAX for SSA for the shallow soils (0-90 cm; see HC.SOL)
         slbMax = Math.max(slbMax, 40);
 
+        // Copying header lines
         boolean slbMaxFound = false;
         for (int s=0; s<6; s++)
             soilProfileModified.append(soilProfileByLine[s]).append(crlf);
-        for (int s=6; s<soilProfileByLine.length; s++)
+
+        // Tier 2 is not needed
+        int sMax = soilProfileByLine.length;
+        if (lineNumberHeadingTier2>0)
+            sMax = lineNumberHeadingTier2;
+
+        for (int s=6; s<sMax; s++)
         {
             if (!slbMaxFound)
             {
@@ -140,18 +153,67 @@ public class Utility
 
 
     // Copying files using Stream
-    static void copyFileUsingStream(File source, File dest) throws IOException
+    static void copyFileUsingStream(File source, File dest) throws InterruptedException
     {
-        try (InputStream is = newInputStream(source.toPath()); OutputStream os = Files.newOutputStream(dest.toPath()))
+
+        // Source file
+        InputStream is;
+        try
         {
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = is.read(buffer)) > 0) {
-                os.write(buffer, 0, length);
+            is = newInputStream(source.toPath());
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        // Destination file
+        int maxTries = 3;
+        OutputStream os;
+        for (int count = 0; count < maxTries; count++)
+        {
+            try
+            {
+                os = Files.newOutputStream(dest.toPath());
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = is.read(buffer)) > 0)
+                {
+                    os.write(buffer, 0, length);
+                }
+                count = maxTries;
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
             }
         }
+
     }
 
+
+    // Writing a file
+    static void writeFile(String fileName, String fileContent) throws InterruptedException {
+
+        // Destination file
+        int maxTries = 10;
+        for (int count = 0; count < maxTries; count++)
+        {
+            try
+            {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+                writer.write(fileContent);
+                writer.close();
+                count = maxTries;
+            }
+            catch (IOException ex)
+            {
+                Thread.sleep(100);
+                System.out.println("> Failed to write "+fileName+" ("+(count+1)+"/"+maxTries+")");
+            }
+        }
+
+    }
 
 
     // List of cultivar codes
