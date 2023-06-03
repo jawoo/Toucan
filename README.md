@@ -74,8 +74,8 @@ You can flag as many cultivars as you like.
 
 ```
 cd ~/codebase/Toucan/
-java -cp "target/ToucanSNX-1.0-SNAPSHOT.jar:lib/*" org.cgiar.toucan.App ETH 4 0
+java -cp "target/ToucanSNX-1.0-SNAPSHOT.jar:lib/*" org.cgiar.toucan.App
 ```
-The arguments used in this example are ETH (country code; Ethiopia), 4 (number of threads; keep it less than the number of CPUs) and 0 (change it to 1 for debugging).
+The values of model input parameters are defined in the "config.yml" file in the root directory.
 
 After all the batch runs are completed, you can pick up the merged CSV output file at ~/codebase/Toucan/res/result directory. Enjoy!
