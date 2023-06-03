@@ -49,6 +49,8 @@ For the sake of simplicity, I keep *all* files into one directory with no subdir
 cd ~/codebase/Toucan/res
 mkdir -p .csm .temp result threads
 cp ~/codebase/dssat-csm-os/Data/* ./.csm
+cp ~/codebase/dssat-csm-os/Data/BatchFiles/* ./.csm
+cp ~/codebase/dssat-csm-os/Data/Default/* ./.csm
 cp ~/codebase/dssat-csm-os/Data/Genotype/* ./.csm
 cp ~/codebase/dssat-csm-os/Data/Pest/* ./.csm
 cp ~/codebase/dssat-csm-os/Data/StandardData/* ./.csm
