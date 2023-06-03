@@ -9,6 +9,7 @@ import org.apache.commons.io.FileUtils;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
@@ -392,11 +393,11 @@ public class App
             ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
             List<Future<Integer>> futures = new ArrayList<>();
 
-            // Let's just pick 20 random units
+            // Let's just pick 200 random units
             int[] subUnits = new int[numberOfUnits];
             if (numberOfUnits>20)
             {
-                subUnits = new int[20];
+                subUnits = new int[200];
                 Random random = new Random();
                 for (int i = 0; i < subUnits.length; i++)
                     subUnits[i] = random.nextInt(numberOfUnits);
@@ -506,7 +507,10 @@ public class App
             String[] csvFileNames = getFileNames(directoryFloweringDates, "CSV");
 
             // For each CSV file
-            for (String csvFileName : csvFileNames) {
+            TreeMap<Object, Object> dtfMap = new TreeMap<>();
+            TreeMap<Object, Object> dthMap = new TreeMap<>();
+            for (String csvFileName : csvFileNames)
+            {
 
                 // Status
                 System.out.println("> Analyzing " + csvFileName + "...");
@@ -543,19 +547,38 @@ public class App
                         else
                             dth = hDDD + (365 - pDDD) + 1;
 
+                        //System.out.println(dtf+", "+dth);
+
                         // Storing
                         try
                         {
-
                             if (dtf>0 && dth>0 && dtf<dth)
                             {
-                                int dtfPrevious = ((int[]) daysToFloweringByCultivar.get(cropCultivarCode))[0];
-                                int dtfNew = (dtf + dtfPrevious) / 2;
+                                if (dtfMap.containsKey(cropCultivarCode))
+                                {
+                                    // DTF
+                                    ArrayList<Object> dtfValues = (ArrayList<Object>)dtfMap.get(cropCultivarCode);
+                                    dtfValues.add(dtf);
+                                    dtfMap.put(cropCultivarCode, dtfValues);
 
-                                int dthPrevious = ((int[]) daysToFloweringByCultivar.get(cropCultivarCode))[1];
-                                int dthNew = (dth + dthPrevious) / 2;
+                                    // DTH
+                                    ArrayList<Object> dthValues = (ArrayList<Object>)dthMap.get(cropCultivarCode);
+                                    dthValues.add(dth);
+                                    dthMap.put(cropCultivarCode, dthValues);
+                                }
+                                else
+                                {
+                                    // DTF
+                                    ArrayList<Object> dtfValues = new ArrayList<>();
+                                    dtfValues.add(dtf);
+                                    dtfMap.put(cropCultivarCode, dtfValues);
 
-                                daysToFloweringByCultivar.put(cropCultivarCode, new int[]{dtfNew, dthNew});
+                                    // DTH
+                                    ArrayList<Object> dthValues = new ArrayList<>();
+                                    dthValues.add(dth);
+                                    dthMap.put(cropCultivarCode, dthValues);
+                                }
+
                             }
 
                         }
@@ -569,6 +592,31 @@ public class App
                 } // For each row in the CSV file
 
             } // For each CSV file
+
+            // List of unique cropCultivarCode
+            ArrayList<Object> cropCultivarList = new ArrayList<>(dtfMap.keySet());
+            int temp;
+            for(int i=0; i<cropCultivarList.size(); i++)
+            {
+                String c = (String)cropCultivarList.get(i);
+                ArrayList<Integer> dtfValues = (ArrayList<Integer>) dtfMap.get(c);
+                ArrayList<Integer> dthValues = (ArrayList<Integer>) dthMap.get(c);
+
+                // Mean of DTF values
+                temp = 0;
+                for (int j=0; j<dtfValues.size(); j++)
+                    temp = temp + dtfValues.get(j);
+                int dtfMean = temp / dtfValues.size();
+
+                // Mean of DTH values
+                temp = 0;
+                for (int j=0; j<dthValues.size(); j++)
+                    temp = temp + dthValues.get(j);
+                int dthMean = temp / dthValues.size();
+
+                // Storing
+                daysToFloweringByCultivar.put(c, new int[]{ dtfMean, dthMean });
+            }
 
             // Adding some default values to avoid errors
             int dtfAvg = 60, dthAvg = 120;
