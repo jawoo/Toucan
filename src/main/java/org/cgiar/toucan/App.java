@@ -81,7 +81,7 @@ public class App
         {
             // Load the YAML file
             Yaml yaml = new Yaml();
-            FileInputStream inputStream = new FileInputStream("."+d+"config.yml");
+            var inputStream = new FileInputStream("."+d+"config.yml");
             Map<String, Object> config = yaml.load(inputStream);
 
             // Assign parameter values
@@ -598,26 +598,24 @@ public class App
             // List of unique cropCultivarCode
             ArrayList<Object> cropCultivarList = new ArrayList<>(dtfMap.keySet());
             int temp;
-            for(int i=0; i<cropCultivarList.size(); i++)
+            for (Object o : cropCultivarList)
             {
-                String c = (String)cropCultivarList.get(i);
+                String c = (String) o;
                 ArrayList<Integer> dtfValues = (ArrayList<Integer>) dtfMap.get(c);
                 ArrayList<Integer> dthValues = (ArrayList<Integer>) dthMap.get(c);
 
                 // Mean of DTF values
                 temp = 0;
-                for (int j=0; j<dtfValues.size(); j++)
-                    temp = temp + dtfValues.get(j);
+                for (Integer dtfValue : dtfValues) temp = temp + dtfValue;
                 int dtfMean = temp / dtfValues.size();
 
                 // Mean of DTH values
                 temp = 0;
-                for (int j=0; j<dthValues.size(); j++)
-                    temp = temp + dthValues.get(j);
+                for (Integer dthValue : dthValues) temp = temp + dthValue;
                 int dthMean = temp / dthValues.size();
 
                 // Storing
-                daysToFloweringByCultivar.put(c, new int[]{ dtfMean, dthMean });
+                daysToFloweringByCultivar.put(c, new int[]{dtfMean, dthMean});
             }
 
             // Adding some default values to avoid errors
@@ -677,7 +675,7 @@ public class App
             String progress = climateOption + ", R" + (i+1) + "/" + numberOfUnits;
 
             // Subset
-            if (step4 && numberOfUnits>0)
+            if (step4)
             {
                 try
                 {
