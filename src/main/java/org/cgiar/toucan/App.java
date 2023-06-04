@@ -265,11 +265,13 @@ public class App
             {
                 boolean firstFile = true;
                 String[] outputFileNames = getFileNames(directoryOutput, "_"+climateOption);
+                Date date = new Date();
+                long timeStamp = date.getTime();
 
                 // Write
                 try
                 {
-                    String combinedOutput = directoryFinal+climateOption+"_combinedOutput_"+countryCode+".csv";
+                    String combinedOutput = directoryFinal+"toucan_combinedoutput_"+climateOption+"_"+timeStamp+".csv";
                     BufferedWriter writer = new BufferedWriter(new FileWriter(combinedOutput));
 
                     // Looping through the files
