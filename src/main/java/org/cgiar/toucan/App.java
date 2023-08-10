@@ -9,7 +9,6 @@ import org.apache.commons.io.FileUtils;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
@@ -64,6 +63,9 @@ public class App
     */
     static boolean[] switchScenarios = new boolean[7];
     static boolean scenarioCombinations = true;
+    static boolean useRecommendedNitrogenFertilizerRate = true;
+    static Object[] nitrogenFertilizerRates;
+    static Object[] atmosphericCO2Values;
 
     // To check if it's numeric
     static Pattern pattern = Pattern.compile("-?\\d+(\\.\\d+)?");
@@ -90,6 +92,17 @@ public class App
             numberOfThreads = (int)config.get("numberOfThreads");
             limitForDebugging = (int)config.get("limitForDebugging");
             scenarioCombinations = (int)config.get("scenarioCombinations") > 0;
+
+            // N fertilizer rate?
+            useRecommendedNitrogenFertilizerRate = (int)config.get("scenarioCombinations") > 0;
+
+            // Parse N fertilizer rate values
+            List<Integer> nitrogenFertilizerRatesList = (List<Integer>) config.get("nitrogenFertilizerRates");
+            nitrogenFertilizerRates = nitrogenFertilizerRatesList.toArray();
+
+            // Parse atmospheric CO2 concentration values
+            List<Integer> atmosphericCO2List = (List<Integer>)config.get("atmosphericCO2");
+            atmosphericCO2Values = atmosphericCO2List.toArray();
 
             // Access nested elements for directories
             Map<String, String> directories = (Map<String, String>)config.get("directory");
@@ -139,12 +152,12 @@ public class App
             System.out.println("> Limit: "+limitForDebugging);
             System.out.println("> Weather data: "+directoryWeather);
             System.out.println("> Management practice - Water: "+(switchScenarios[0] ? "ON" : "OFF"));
-            System.out.println("> Management practice - Fertilizer: "+(switchScenarios[1] ? "ON" : "OFF"));
+            System.out.println("> Management practice - Fertilizer: "+(switchScenarios[1] ? "ON" : "OFF")+" ("+getString(nitrogenFertilizerRates)+")");
             System.out.println("> Management practice - Manure: "+(switchScenarios[2] ? "ON" : "OFF"));
             System.out.println("> Management practice - Residue: "+(switchScenarios[3] ? "ON" : "OFF"));
             System.out.println("> Management practice - Planting window: "+(switchScenarios[4] ? "ON" : "OFF"));
             System.out.println("> Management practice - Planting density: "+(switchScenarios[5] ? "ON" : "OFF"));
-            System.out.println("> Management practice - CO2 fertilization: "+(switchScenarios[6] ? "ON" : "OFF"));
+            System.out.println("> Management practice - CO2 fertilization: "+(switchScenarios[6] ? "ON" : "OFF")+" ("+getString(atmosphericCO2Values)+")");
             System.out.println("> Management practice - Factorial combinations: "+(scenarioCombinations ? "ON" : "OFF"));
 
             // Copying Toucan workspace files
@@ -876,6 +889,16 @@ public class App
         return dir.list();
     }
 
+
+    // Print object array in string
+    static String getString(Object[] items)
+    {
+        StringBuilder s = new StringBuilder();
+        for (Object item: items)
+            s.append(item).append(", ");
+        s = new StringBuilder(s.substring(0, s.length() - 2));
+        return s.toString();
+    }
 
 
     // Numeric checker

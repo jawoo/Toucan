@@ -22,6 +22,7 @@ public class ThreadSeasonalRuns implements Callable<Integer>
     String progress;
     int firstPlantingYear;
     TreeMap<Integer, Integer> co2History;
+    DecimalFormat df000 = new DecimalFormat("000");
 
     ThreadSeasonalRuns(Object[] o, Object[] weatherAndPlantingDate, Object[] cultivarOption,
                        int daysToFlowering, int daysToHarvest, String climateOption,
@@ -247,95 +248,121 @@ public class ThreadSeasonalRuns implements Callable<Integer>
                 int switchPlantingDensity = scn[5];
                 int switchCO2Fertilization = scn[6];
 
-                // Treatment label
-                String labelWithAezSeason = "W"+scn[0]+"F"+scn[1]+"C"+scn[6]+"|";
-
-                // Settings
-                int nRate = nitrogenFertilizerRates[switchFertilizer];
-                int manureRate = manureRates[switchManure];
-                int residueHarvestPct = residueHarvestPcts[switchResidue];
-                int co2 = co2History.get(2000);
-
-                // Water management and planting window
-                if (switchPlantingWindow==0)
-                {
-
-                    // Median yields
-                    pdateOption = "PM";
-                    if (switchWaterManagement==0)
-                    {
-                        // 0: pdRainfedMax, 1: pdRainfedMedian, 2: pdIrrigatedMax, 3: pdIrrigatedMedian
-                        waterManagement = "R";
-                        //plantingDate = plantingDatesRainfed[1];
-                    }
-                    else
-                    {
-                        // 0: pdRainfedMax, 1: pdRainfedMedian, 2: pdIrrigatedMax, 3: pdIrrigatedMedian
-                        waterManagement = "I";
-                        //plantingDate = plantingDatesIrrigated[1];
-                    }
-                }
+                // N rates to use
+                ArrayList<Integer> nRates = new ArrayList<>();
+                if (App.useRecommendedNitrogenFertilizerRate)
+                    nRates.add(nitrogenFertilizerRates[switchFertilizer]);
                 else
-                {
+                    for (Object n: App.nitrogenFertilizerRates)
+                        nRates.add((Integer)n);
 
-                    // Best yields
-                    pdateOption = "PB";
-                    if (switchWaterManagement==0)
-                    {
-                        // 0: pdRainfedMax, 1: pdRainfedMedian, 2: pdIrrigatedMax, 3: pdIrrigatedMedian
-                        waterManagement = "R";
-                        //plantingDate = plantingDatesRainfed[0];
-                    }
-                    else
-                    {
-                        // 0: pdRainfedMax, 1: pdRainfedMedian, 2: pdIrrigatedMax, 3: pdIrrigatedMedian
-                        waterManagement = "I";
-                        //plantingDate = plantingDatesIrrigated[0];
-                    }
-                }
-
-                // Planting density option
-                if (switchPlantingDensity==0)
-                {
-                    pdensityOption = "DL";
-                }
-                else
-                {
-                    pdensityOption = "DH";
-                }
-
-                // CO2 fertilization
+                // CO2 values to use
+                ArrayList<Integer> CO2s = new ArrayList<>();
                 if (switchCO2Fertilization==1)
+                    for (Object c: App.atmosphericCO2Values)
+                        CO2s.add((Integer)c);
+                else
                 {
                     int y = Integer.parseInt(climateOption.substring(0,4));
-                    co2 = co2History.get(y);
+                    CO2s.add(co2History.get(y));
                 }
 
-                // Status
-                runLabel = "W" + switchWaterManagement + "-F" + switchFertilizer + "-M" + switchManure + "-R" + switchResidue + "-" + pdateOption + "-" + pdensityOption + "-" + cropCode + cultivarCode + "-CO2" + co2;
+                // Preparing the combination of multiple N and CO2 values
+                ArrayList<Object> inputCombinations = new ArrayList<>();
+                for (Object n: nRates)
+                    for (Object c: CO2s)
+                        inputCombinations.add(new Object[]{ n, c });
 
-                // Run it
-                try
+                // Looping through the values
+                for (Object ic: inputCombinations)
                 {
-                    String weatherSequence = weatherAndPlantingDate[0].toString().substring(0,4);
-                    SnxWriterSeasonalRuns.runningTreatmentPackages(o, waterManagement, nRate, manureRate, cultivarOption, daysToFlowering, daysToHarvest, pdensityOption, residueHarvestPct, co2, weatherAndPlantingDate, labelWithAezSeason, firstPlantingYear);
-                    System.out.println("> T" + dfTT.format(threadID) + ", " + progress + ", S" + (s+1) + "/" + ns + ", " + runLabel + ", SEQ: " + weatherSequence);
-                    exitCode = ExeRunner.dscsm048_seasonal("N");
-                    if (exitCode == 0)
+                    Object[] i = (Object[])ic;
+
+                    // Settings
+                    int nRate = (Integer)i[0];
+                    int co2 = (Integer)i[1];
+                    int manureRate = manureRates[switchManure];
+                    int residueHarvestPct = residueHarvestPcts[switchResidue];
+
+                    // Treatment label
+                    String label = "W"+scn[0]+"F"+df000.format(nRate)+"C"+df000.format(co2)+"|";
+
+                    // Water management and planting window
+                    if (switchPlantingWindow==0)
                     {
-                        File outputSource = new File(App.directoryThreads + "T" + threadID + App.d + "summary.csv");
-                        File outputDestination = new File(App.directoryOutput + "U" + unitId + "_C" + cell5m + "_" + climateOption + "_S" + s + "_" + runLabel + "_" + weatherSequence + ".csv");
-                        outputDestination.setReadable(true, false);
-                        outputDestination.setExecutable(true, false);
-                        outputDestination.setWritable(true, false);
-                        Utility.copyFileUsingStream(outputSource, outputDestination);
+
+                        // Median yields
+                        pdateOption = "PM";
+                        if (switchWaterManagement==0)
+                        {
+                            // 0: pdRainfedMax, 1: pdRainfedMedian, 2: pdIrrigatedMax, 3: pdIrrigatedMedian
+                            waterManagement = "R";
+                            //plantingDate = plantingDatesRainfed[1];
+                        }
+                        else
+                        {
+                            // 0: pdRainfedMax, 1: pdRainfedMedian, 2: pdIrrigatedMax, 3: pdIrrigatedMedian
+                            waterManagement = "I";
+                            //plantingDate = plantingDatesIrrigated[1];
+                        }
                     }
-                }
-                catch(Exception ex)
-                {
-                    ex.printStackTrace();
-                    System.out.println("> Seasonal runs: Error at T" + threadID + " for S" + s + "_" + runLabel + "_" + season);
-                }
+                    else
+                    {
+
+                        // Best yields
+                        pdateOption = "PB";
+                        if (switchWaterManagement==0)
+                        {
+                            // 0: pdRainfedMax, 1: pdRainfedMedian, 2: pdIrrigatedMax, 3: pdIrrigatedMedian
+                            waterManagement = "R";
+                            //plantingDate = plantingDatesRainfed[0];
+                        }
+                        else
+                        {
+                            // 0: pdRainfedMax, 1: pdRainfedMedian, 2: pdIrrigatedMax, 3: pdIrrigatedMedian
+                            waterManagement = "I";
+                            //plantingDate = plantingDatesIrrigated[0];
+                        }
+                    }
+
+                    // Planting density option
+                    if (switchPlantingDensity==0)
+                    {
+                        pdensityOption = "DL";
+                    }
+                    else
+                    {
+                        pdensityOption = "DH";
+                    }
+
+                    // Status
+                    runLabel = "W" + switchWaterManagement + "-F" + df000.format(nRate) + "-M" + switchManure + "-R" + switchResidue + "-" + pdateOption + "-" + pdensityOption + "-" + cropCode + cultivarCode + "-C" + df000.format(co2);
+                    String runLabel2 = "W" + switchWaterManagement + "-F" + switchFertilizer + "-M" + switchManure + "-R" + switchResidue + "-" + pdateOption + "-" + pdensityOption + "-" + cropCode + cultivarCode + "-CO2" + co2;
+
+                    // Run it
+                    try
+                    {
+                        String weatherSequence = weatherAndPlantingDate[0].toString().substring(0,4);
+                        SnxWriterSeasonalRuns.runningTreatmentPackages(o, waterManagement, nRate, manureRate, cultivarOption, daysToFlowering, daysToHarvest, pdensityOption, residueHarvestPct, co2, weatherAndPlantingDate, label, firstPlantingYear);
+                        System.out.println("> T" + dfTT.format(threadID) + ", " + progress + ", S" + (s+1) + "/" + ns + ", " + runLabel + ", SEQ: " + weatherSequence);
+                        exitCode = ExeRunner.dscsm048_seasonal("N");
+                        if (exitCode == 0)
+                        {
+                            File outputSource = new File(App.directoryThreads + "T" + threadID + App.d + "summary.csv");
+                            File outputDestination = new File(App.directoryOutput + "U" + unitId + "_C" + cell5m + "_" + climateOption + "_S" + s + "_" + runLabel + "_" + weatherSequence + ".csv");
+                            outputDestination.setReadable(true, false);
+                            outputDestination.setExecutable(true, false);
+                            outputDestination.setWritable(true, false);
+                            Utility.copyFileUsingStream(outputSource, outputDestination);
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        ex.printStackTrace();
+                        System.out.println("> Seasonal runs: Error at T" + threadID + " for S" + s + "_" + runLabel + "_" + season);
+                    }
+
+                } // for (Object i: inputCombinations)
 
             }
 

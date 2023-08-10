@@ -90,7 +90,7 @@ public class SnxWriterSeasonalRuns
         String weatherCode = weatherAndPlantingDate[0].toString().substring(0,4);
 
         snxSectionTreatments +=
-                dfTT.format(tn)+" 1 0 0 "+label+weatherCode+"                1 "+dfTT.format(tn)+"  0  1 "+dfTT.format(tn)+"  "+mi+"  "+mf+"  "+mr+"  0  0  1  "+mh+"  1\n";
+                dfTT.format(tn)+" 1 0 0 "+label+weatherCode+"            1 "+dfTT.format(tn)+"  0  1 "+dfTT.format(tn)+"  "+mi+"  "+mf+"  "+mr+"  0  0  1  "+mh+"  1\n";
 
         snxSectionFieldLevel1 +=
                 dfTT.format(tn)+" "+idField+" "+"WEATHERS"+"   -99     0 IB000     0     0 00000 -99    180  "+soilProfileID+" -99\n";
